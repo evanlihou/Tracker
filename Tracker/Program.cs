@@ -42,7 +42,6 @@ builder.Services.AddIdentityServer(options =>
         // // keep old key for 7 days in discovery for validation of tokens
         // options.KeyManagement.RetentionDuration = TimeSpan.FromDays(7);
     })
-    .AddDeveloperSigningCredential()
     .AddApiAuthorization<ApplicationUser, ApplicationDbContext>(opt =>
     {
         opt.Clients.Add(new Client
@@ -135,7 +134,10 @@ else
     app.UseHsts();
 }
 
-app.Services.GetService<ApplicationDbContext>()?.Database.Migrate();
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetService<ApplicationDbContext>()?.Database.Migrate();
+}
 
 //app.UseHttpsRedirection();
 app.UseStaticFiles();

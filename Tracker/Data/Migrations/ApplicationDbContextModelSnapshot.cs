@@ -422,6 +422,25 @@ namespace Tracker.Data.Migrations
                     b.ToTable("Reminders");
                 });
 
+            modelBuilder.Entity("Tracker.Models.ReminderCompletion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CompletionTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ReminderId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReminderId");
+
+                    b.ToTable("ReminderCompletions");
+                });
+
             modelBuilder.Entity("Tracker.Models.ReminderType", b =>
                 {
                     b.Property<int>("Id")
@@ -502,6 +521,17 @@ namespace Tracker.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("ReminderType");
+                });
+
+            modelBuilder.Entity("Tracker.Models.ReminderCompletion", b =>
+                {
+                    b.HasOne("Tracker.Models.Reminder", "Reminder")
+                        .WithMany()
+                        .HasForeignKey("ReminderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reminder");
                 });
 #pragma warning restore 612, 618
         }
