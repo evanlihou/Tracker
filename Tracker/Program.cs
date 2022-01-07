@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Bot;
 using Duende.IdentityServer;
+using Duende.IdentityServer.Configuration;
 using Duende.IdentityServer.Models;
 using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
 using Microsoft.AspNetCore.Authentication;
@@ -27,7 +28,17 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     })
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddIdentityServer()
+builder.Services.AddIdentityServer(opt =>
+    {
+        opt.KeyManagement.Enabled = true;
+        opt.KeyManagement.SigningAlgorithms = new []
+        {
+            new SigningAlgorithmOptions("RS256") 
+            {
+                UseX509Certificate = true
+            }
+        };
+    })
     .AddApiAuthorization<ApplicationUser, ApplicationDbContext>(opt =>
     {
         opt.Clients.Add(new Client
