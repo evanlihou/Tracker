@@ -1,0 +1,24 @@
+<h1 id="tableLabel">Weather forecast</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+<p *ngIf="!reminders"><em>Loading...</em></p>
+
+<table class='table table-striped' aria-labelledby="tableLabel" *ngIf="reminders">
+  <thead>
+    <tr>
+      <th>TODO</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let reminder of reminders">
+      <td>{{ 'TODO' }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<div *ngIf="cronForm">
+  <cron-editor [formControl]="cronForm" [options]="cronOptions"></cron-editor>
+
+  <div><p>{{ cronForm.value }}</p></div>
+</div>
