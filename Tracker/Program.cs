@@ -122,7 +122,7 @@ else
 
 app.Services.GetService<ApplicationDbContext>()?.Database.Migrate();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
