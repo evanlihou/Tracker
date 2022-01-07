@@ -65,7 +65,9 @@ public class TelegramBotService
                 
                 var reminderId = Regex.Match(update.Message.ReplyToMessage.Text, "\\(\\(([\\d]+)\\)\\)").Groups[1].Value;
 
-                var reminder = await _db.Reminders.FindAsync(int.Parse(reminderId));
+                if (!int.TryParse(reminderId, out var parsedReminderId)) continue;
+                
+                var reminder = await _db.Reminders.FindAsync(parsedReminderId);
                 
                 if (reminder?.CronLocal == null) continue;
 
