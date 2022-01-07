@@ -12,9 +12,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash - \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
-COPY ["Tracker/Tracker.csproj", "Tracker/"]
+COPY ["Tracker.csproj", "Tracker/"]
 RUN dotnet restore "Tracker/Tracker.csproj"
-COPY . .
+COPY . Tracker
 WORKDIR "/src/Tracker"
 RUN dotnet build "Tracker.csproj" -c Release -o /app/build
 
