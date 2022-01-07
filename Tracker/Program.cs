@@ -120,6 +120,8 @@ else
     app.UseHsts();
 }
 
+app.Services.GetService<ApplicationDbContext>()?.Database.Migrate();
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
