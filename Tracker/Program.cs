@@ -28,16 +28,19 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     })
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddIdentityServer(opt =>
+builder.Services.AddIdentityServer(options =>
     {
-        opt.KeyManagement.Enabled = true;
-        opt.KeyManagement.SigningAlgorithms = new []
-        {
-            new SigningAlgorithmOptions("RS256") 
-            {
-                UseX509Certificate = true
-            }
-        };
+        // set path where to store keys
+        options.KeyManagement.KeyPath = "/app/keys";
+    
+        // new key every 30 days
+        options.KeyManagement.RotationInterval = TimeSpan.FromDays(30);
+    
+        // announce new key 2 days in advance in discovery
+        options.KeyManagement.PropagationTime = TimeSpan.FromDays(2);
+    
+        // keep old key for 7 days in discovery for validation of tokens
+        options.KeyManagement.RetentionDuration = TimeSpan.FromDays(7);
     })
     .AddApiAuthorization<ApplicationUser, ApplicationDbContext>(opt =>
     {
