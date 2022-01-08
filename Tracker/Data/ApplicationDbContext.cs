@@ -17,4 +17,5 @@ public class ApplicationDbContext : ApiAuthorizationDbContext<ApplicationUser>
     public DbSet<ReminderType> ReminderTypes { get; set; }
     public DbSet<PersistentConfig> PersistentConfigs { get; set; }
     public DbSet<ReminderCompletion> ReminderCompletions { get; set; }
+    public DbSet<ReminderMessage> ReminderMessages { get; set; }
 }

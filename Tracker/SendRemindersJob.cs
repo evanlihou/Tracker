@@ -1,5 +1,6 @@
 using Bot;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Tracker.Data;
 using Tracker.Models;
@@ -25,8 +26,9 @@ public class SendRemindersJob : IJob
     {
         //_logger.LogInformation("Sending reminders...");
 
-        var dueReminders = _db.Reminders.Where(x =>
-            x.NextRun <= DateTime.UtcNow && (x.StartDate == null || x.StartDate <= DateTime.UtcNow) && (x.EndDate == null || x.EndDate >= DateTime.UtcNow)).AsEnumerable();
+        var scheduledTime = context.ScheduledFireTimeUtc!.Value.UtcDateTime;
+        var dueReminders = _db.Reminders.Include(x => x.ReminderType).Where(x =>
+            x.NextRun <= scheduledTime && (x.StartDate == null || x.StartDate <= scheduledTime) && (x.EndDate == null || x.EndDate >= scheduledTime)).AsEnumerable();
 
         foreach (var reminder in dueReminders)
         {
@@ -39,7 +41,7 @@ public class SendRemindersJob : IJob
             
             _logger.LogInformation("Sending reminder to user {User} for reminder {Reminder}", user.Id, reminder.Id);
 
-            await _bot.SendMessageToUser(user.TelegramUserId, $"Reminder: {reminder.Name} (({reminder.Id}))");
+            await _bot.SendReminderToUser(user.TelegramUserId, $"Reminder: {reminder.ReminderType.Name} - {reminder.Name}", reminder.Id);
             /*
             if (reminder.CronLocal == null) continue;
 
@@ -54,7 +56,7 @@ public class SendRemindersJob : IJob
                 reminder.NextRun = ((DateTimeOffset)nextRun).UtcDateTime;
             */
 
-            reminder.NextRun = DateTimeOffset.UtcNow.AddMinutes(reminder.ReminderMinutes).UtcDateTime;
+            reminder.NextRun = scheduledTime.AddMinutes(reminder.ReminderMinutes);
         }
 
         await _db.SaveChangesAsync();

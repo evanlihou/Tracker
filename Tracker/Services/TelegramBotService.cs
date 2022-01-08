@@ -1,9 +1,10 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
 using Quartz;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 using Tracker.Data;
 using Tracker.Models;
 
@@ -43,57 +44,110 @@ public class TelegramBotService
         return true;
     }
 
+    public async Task<bool> SendReminderToUser(long? userId, string message, int id)
+    {
+        if (userId == null) return false;
+
+        var sentMessage = await _botClient.SendTextMessageAsync(new ChatId((long)userId), message,
+            replyMarkup: new InlineKeyboardMarkup(
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Done", $"done[{id}]"),
+                    InlineKeyboardButton.WithCallbackData("Skip", $"skip[{id}]")
+                }));
+
+        _db.ReminderMessages.Add(new ReminderMessage
+        {
+            ReminderId = id,
+            MessageId = sentMessage.MessageId
+        });
+
+        await _db.SaveChangesAsync();
+        
+        return true;
+    }
+
     public async Task ProcessUpdates()
     {
         int? lastProcessedId = int.TryParse((await _configRepo.GetByCodeOrNull("TG_LAST_UPDATE_PROCESSED"))?.Value, out var f) ? f : default;
         var updates = await _botClient.GetUpdatesAsync(lastProcessedId);
         foreach (var update in updates)
         {
-            if (update.Message?.ReplyToMessage != null)
+            if (update.Type != UpdateType.CallbackQuery || update.CallbackQuery == null)
             {
-                if (update.Message.ReplyToMessage.From?.Id != _botClient.BotId)
-                {
-                    _logger.LogWarning("Got a reply that didn't originate with the bot {Message}", update.Message.Text);
-                    continue;
-                }
-                _logger.LogInformation("Got reply with content '{MessageContent}' from original message '{ReplyContent}'", update.Message.Text, update.Message.ReplyToMessage.Text);
-
-                if (update.Message.ReplyToMessage.Text == null)
-                {
-                    continue;
-                }
-                
-                var reminderId = Regex.Match(update.Message.ReplyToMessage.Text, "\\(\\(([\\d]+)\\)\\)").Groups[1].Value;
-
-                if (!int.TryParse(reminderId, out var parsedReminderId)) continue;
-                
-                var reminder = await _db.Reminders.FindAsync(parsedReminderId);
-                
-                if (reminder?.CronLocal == null) continue;
-
-                var user = await _userManager.FindByIdAsync(reminder.UserId);
-
-                var cronExpression = new CronExpression(reminder.CronLocal)
-                {
-                    TimeZone = user.TimeZone
-                };
+                _logger.LogDebug("Skipped update that wasn't a callback query");
+                continue;
+            }
             
-                var nextRun = cronExpression.GetTimeAfter(DateTimeOffset.UtcNow);
+            if (update.CallbackQuery.Message?.From?.Id != _botClient.BotId)
+            {
+                _logger.LogWarning("Got a reply that didn't originate with the bot (messageId: {Message})", update.CallbackQuery.Message?.MessageId);
+                continue;
+            }
             
-                if (nextRun != null)
-                    reminder.NextRun = ((DateTimeOffset)nextRun).UtcDateTime;
+            _logger.LogInformation("Got callback with content '{CallbackContent}' from original message '{MessageContent}'", update.CallbackQuery.Data, update.CallbackQuery.Message?.Text);
 
+            if (string.IsNullOrEmpty(update.CallbackQuery.Data))
+            {
+                continue;
+            }
+
+            var cbData = Regex.Match(update.CallbackQuery.Data, "([^\\[]+)\\[([\\d]+)\\]");
+            var reminderId = cbData.Groups[2].Value;
+            var action = cbData.Groups[1].Value;
+
+            if (!int.TryParse(reminderId, out var parsedReminderId)) continue;
+            
+            var reminder = await _db.Reminders.FindAsync(parsedReminderId);
+            
+            if (reminder?.CronLocal == null) continue;
+
+            var user = await _userManager.FindByIdAsync(reminder.UserId);
+
+            var cronExpression = new CronExpression(reminder.CronLocal)
+            {
+                TimeZone = user.TimeZone
+            };
+        
+            var nextRun = cronExpression.GetTimeAfter(DateTimeOffset.UtcNow);
+        
+            if (nextRun != null)
+                reminder.NextRun = ((DateTimeOffset)nextRun).UtcDateTime;
+
+            if (action == "done")
+            {
                 _db.ReminderCompletions.Add(new ReminderCompletion
                 {
                     ReminderId = reminder.Id,
                     CompletionTime = DateTime.UtcNow
                 });
-
-                await _db.SaveChangesAsync();
             }
+
+            var reminderMessages = _db.ReminderMessages.Where(x => x.ReminderId == reminder.Id);
+
+            foreach (var message in reminderMessages)
+            {
+                await _botClient.DeleteMessageAsync(user.TelegramUserId!, message.MessageId);
+            }
+            
+            _db.ReminderMessages.RemoveRange(reminderMessages);
+
+            await _db.SaveChangesAsync();
+
+            await SendMessageToUser(user.TelegramUserId, $"{reminder.Name} marked as {ActionToHumanReadable(action)}");
         }
 
         if (updates.Any())
             await _configRepo.UpdateByCode("TG_LAST_UPDATE_PROCESSED", (updates.Last().Id + 1).ToString());
+    }
+
+    private static string ActionToHumanReadable(string action)
+    {
+        return action switch
+        {
+            "done" => "completed",
+            "skip" => "skipped",
+            _ => throw new ApplicationException($"Unknown action {action}")
+        };
     }
 }
