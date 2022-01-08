@@ -73,7 +73,7 @@ builder.Services.AddQuartz(q =>
     q.ScheduleJob<SendRemindersJob>(trigger => trigger
         .WithIdentity("Send Reminders Job")
         .WithDescription("Get reminders that are past due for sending and send them out")
-        .StartNow().WithDailyTimeIntervalSchedule(s => s.WithIntervalInMinutes(1))
+        .StartNow().WithDailyTimeIntervalSchedule(s => s.WithIntervalInSeconds(30))
     );
 
     q.ScheduleJob<ProcessTelegramUpdatesJob>(trigger => trigger
