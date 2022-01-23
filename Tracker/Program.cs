@@ -119,6 +119,7 @@ builder.Services.AddSwaggerGen(opt =>
 builder.Services.AddSingleton(x => new TelegramSettings
     { AccessToken = builder.Configuration["Telegram:AccessToken"] });
 builder.Services.AddScoped<TelegramBotService>();
+builder.Services.AddScoped<ReminderService>();
 builder.Services.AddScoped<PersistentConfigRepository>();
 
 var app = builder.Build();

@@ -41,22 +41,26 @@ public class SendRemindersJob : IJob
             
             _logger.LogInformation("Sending reminder to user {User} for reminder {Reminder}", user.Id, reminder.Id);
 
-            await _bot.SendReminderToUser(user.TelegramUserId, $"Reminder: {reminder.ReminderType.Name} - {reminder.Name}", reminder.Id);
-            /*
-            if (reminder.CronLocal == null) continue;
+            await _bot.SendReminderToUser(user.TelegramUserId, $"Reminder: {reminder.ReminderType.Name} - {reminder.Name}", reminder.Id, reminder.Nonce ?? 0);
 
-            var cronExpression = new CronExpression(reminder.CronLocal)
+            if (reminder.ReminderMinutes <= 0)
             {
-                TimeZone = user.TimeZone
-            };
-            
-            var nextRun = cronExpression.GetTimeAfter(DateTimeOffset.UtcNow);
-            
-            if (nextRun != null)
-                reminder.NextRun = ((DateTimeOffset)nextRun).UtcDateTime;
-            */
-
-            reminder.NextRun = scheduledTime.AddMinutes(reminder.ReminderMinutes);
+                if (reminder.CronLocal == null) continue;
+ 
+                 var cronExpression = new CronExpression(reminder.CronLocal)
+                 {
+                     TimeZone = user.TimeZone
+                 };
+                 
+                 var nextRun = cronExpression.GetTimeAfter(DateTimeOffset.UtcNow);
+                 
+                 if (nextRun != null)
+                     reminder.NextRun = ((DateTimeOffset)nextRun).UtcDateTime;
+            }
+            else
+            {
+                reminder.NextRun = scheduledTime.AddMinutes(reminder.ReminderMinutes);
+            }
         }
 
         await _db.SaveChangesAsync();

@@ -20,15 +20,17 @@ public class TelegramBotService
     private readonly ILogger<TelegramBotService> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _db;
+    private readonly ReminderService _reminderService;
     private readonly PersistentConfigRepository _configRepo;
     
-    public TelegramBotService(TelegramSettings telegramSettings, ILogger<TelegramBotService> logger, ApplicationDbContext db, UserManager<ApplicationUser> userManager, PersistentConfigRepository configRepo)
+    public TelegramBotService(TelegramSettings telegramSettings, ILogger<TelegramBotService> logger, ApplicationDbContext db, UserManager<ApplicationUser> userManager, PersistentConfigRepository configRepo, ReminderService reminderService)
     {
         _botClient = new TelegramBotClient(telegramSettings.AccessToken);
         _logger = logger;
         _db = db;
         _userManager = userManager;
         _configRepo = configRepo;
+        _reminderService = reminderService;
     }
 
     public async Task<User> GetBot()
@@ -44,7 +46,7 @@ public class TelegramBotService
         return true;
     }
 
-    public async Task<bool> SendReminderToUser(long? userId, string message, int id)
+    public async Task<bool> SendReminderToUser(long? userId, string message, int id, int nonce)
     {
         if (userId == null) return false;
 
@@ -52,8 +54,8 @@ public class TelegramBotService
             replyMarkup: new InlineKeyboardMarkup(
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Done", $"done[{id}]"),
-                    InlineKeyboardButton.WithCallbackData("Skip", $"skip[{id}]")
+                    InlineKeyboardButton.WithCallbackData("Done", $"done[{id}][n={nonce}]"),
+                    InlineKeyboardButton.WithCallbackData("Skip", $"skip[{id}][n={nonce}]")
                 }));
 
         _db.ReminderMessages.Add(new ReminderMessage
@@ -71,6 +73,10 @@ public class TelegramBotService
     {
         int? lastProcessedId = int.TryParse((await _configRepo.GetByCodeOrNull("TG_LAST_UPDATE_PROCESSED"))?.Value, out var f) ? f : default;
         var updates = await _botClient.GetUpdatesAsync(lastProcessedId);
+        
+        if (updates.Any())
+            await _configRepo.UpdateByCode("TG_LAST_UPDATE_PROCESSED", (updates.Last().Id + 1).ToString());
+        
         foreach (var update in updates)
         {
             if (update.Type != UpdateType.CallbackQuery || update.CallbackQuery == null)
@@ -92,53 +98,62 @@ public class TelegramBotService
                 continue;
             }
 
-            var cbData = Regex.Match(update.CallbackQuery.Data, "([^\\[]+)\\[([\\d]+)\\]");
-            var reminderId = cbData.Groups[2].Value;
-            var action = cbData.Groups[1].Value;
+            // Example callback data: `done[1][n=1208346]` where 1 is reminderid and 1208346 is nonce
+            var cbData = Regex.Match(update.CallbackQuery.Data, "(?'action'[^\\[]+)\\[(?'id'[\\d]+)\\](\\[n=(?'nonce'[\\d]+)\\])?");
+            var reminderId = cbData.Groups["id"].Value;
+            var action = cbData.Groups["action"].Value;
+            var nonce = cbData.Groups["nonce"].Value;
 
             if (!int.TryParse(reminderId, out var parsedReminderId)) continue;
+
+            var parsedNonce = 0;
+            if (!string.IsNullOrEmpty(nonce))
+            {
+                if (!int.TryParse(nonce, out parsedNonce)) _logger.LogWarning("Failed to parse nonce");
+            }
             
             var reminder = await _db.Reminders.FindAsync(parsedReminderId);
-            
-            if (reminder?.CronLocal == null) continue;
+
+            if (reminder == null)
+            {
+                _logger.LogWarning("Unable to find reminder {ReminderId}", parsedReminderId);
+                continue;
+            }
 
             var user = await _userManager.FindByIdAsync(reminder.UserId);
 
-            var cronExpression = new CronExpression(reminder.CronLocal)
+            if (user.TelegramUserId != update.CallbackQuery.Message?.Chat.Id)
             {
-                TimeZone = user.TimeZone
-            };
-        
-            var nextRun = cronExpression.GetTimeAfter(DateTimeOffset.UtcNow);
-        
-            if (nextRun != null)
-                reminder.NextRun = ((DateTimeOffset)nextRun).UtcDateTime;
-
-            if (action == "done")
-            {
-                _db.ReminderCompletions.Add(new ReminderCompletion
-                {
-                    ReminderId = reminder.Id,
-                    CompletionTime = DateTime.UtcNow
-                });
+                _logger.LogWarning("Got a callback from the wrong person. Expected {Expected} got {Actual}", user.TelegramUserId, update.CallbackQuery.Message?.Chat.Id);
             }
+            
+            var completionResult = await _reminderService.MarkCompleted(parsedReminderId, parsedNonce, action != "done");
+
+            if (!completionResult) continue;
 
             var reminderMessages = _db.ReminderMessages.Where(x => x.ReminderId == reminder.Id);
 
+            List<Task> deletedMessageTasks = new();
             foreach (var message in reminderMessages)
             {
-                await _botClient.DeleteMessageAsync(user.TelegramUserId!, message.MessageId);
+                deletedMessageTasks.Add(_botClient.DeleteMessageAsync(user.TelegramUserId!, message.MessageId));
             }
-            
+
+            try
+            {
+                if (deletedMessageTasks.Any()) await Task.WhenAll(deletedMessageTasks);
+            }
+            catch (AggregateException ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete message(s)");
+            }
+
             _db.ReminderMessages.RemoveRange(reminderMessages);
 
             await _db.SaveChangesAsync();
 
             await SendMessageToUser(user.TelegramUserId, $"{reminder.Name} marked as {ActionToHumanReadable(action)}");
         }
-
-        if (updates.Any())
-            await _configRepo.UpdateByCode("TG_LAST_UPDATE_PROCESSED", (updates.Last().Id + 1).ToString());
     }
 
     private static string ActionToHumanReadable(string action)

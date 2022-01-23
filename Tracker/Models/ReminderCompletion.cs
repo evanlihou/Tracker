@@ -8,7 +8,7 @@ public class ReminderCompletion : BaseModel
     public int ReminderId { get; set; }
     
     public Reminder Reminder { get; set; }
-    
+
     /// <summary>
     /// UTC
     /// </summary>

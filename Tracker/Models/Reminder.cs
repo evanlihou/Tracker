@@ -26,6 +26,11 @@ public class Reminder : BaseModel
     public ReminderType ReminderType { get; set; }
 
     public int ReminderMinutes { get; set; } = 10;
+    
+    /// <summary>
+    /// A random value to prevent multiple completions for one reminder
+    /// </summary>
+    public int? Nonce { get; set; }
 
     public virtual bool IsOwnedBy(string userId) => UserId == userId;
 }
