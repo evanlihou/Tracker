@@ -9,19 +9,60 @@ using Tracker.Models;
 namespace Tracker.Controllers;
 
 [Authorize]
-[ApiController]
 [Route("reminder")]
 public class ReminderController : BaseController
 {
 
     [HttpGet]
-    public ActionResult<List<Reminder>> GetReminders()
+    public async Task<ActionResult> List()
     {
-        var reminders = Db.Reminders.Include(x => x.ReminderType)
-            .Where(x => x.UserId == UserId).ToList();
+        var reminders = await Db.Reminders.Include(x => x.ReminderType)
+            .Where(x => x.UserId == UserId).ToListAsync();
+
+        return View(new ReminderListViewModel
+        {
+            Reminders = reminders,
+            UserTimeZone = await GetUserTimeZone()
+        });
+    }
+
+    public class ReminderListViewModel
+    {
+        public List<Reminder> Reminders = null!;
+        public TimeZoneInfo UserTimeZone = null!;
+    }
+
+    [HttpGet("{reminderId:int}")]
+    public async Task<ActionResult> Edit(int reminderId)
+    {
+        var reminder = await Db.Reminders.Include(x => x.ReminderType).SingleOrDefaultAsync(x => x.Id == reminderId);
+
+        if (reminder == null)
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+        }
+
+        return View(reminder);
+    }
+
+    [HttpPost("{reminderId:int}")]
+    public async Task<ActionResult> Edit(int reminderId, [FromForm] Reminder model)
+    {
+        ModelState.Remove("ReminderType");
+        ModelState.Remove("UserId");
+        if (!ModelState.IsValid) return View(model);
+
+        var dbReminder = await Db.Reminders.FindAsync(reminderId);
+
+        if (dbReminder == null) return View(null);
         
-        if (!reminders.Any()) return NoContent();
-        return Ok(reminders);
+        dbReminder.Name = model.Name;
+        dbReminder.CronLocal = model.CronLocal;
+        dbReminder.ReminderTypeId = model.ReminderTypeId;
+
+        await Db.SaveChangesAsync();
+
+        return RedirectToAction("List");
     }
 
     [HttpPost]

@@ -51,9 +51,6 @@ public class UserController : BaseController
         [MaxLength(200)]
         public string? TimeZone { get; set; }
 
-        public UserViewModel()
-        {
-        }
         public UserViewModel(ApplicationUser user)
         {
             Id = user.Id;

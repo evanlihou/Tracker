@@ -1,0 +1,33 @@
+@model Tracker.Controllers.ReminderController.ReminderListViewModel
+
+@{
+  ViewBag.Title = "Reminders";
+  Layout = "_Layout";
+}
+
+<h2>Reminders</h2>
+
+<table class="table">
+  <thead>
+  <tr>
+    <th>Name</th>
+    <th>Category</th>
+    <th>Next Reminder</th>
+    <th>Actions</th>
+  </tr>
+  </thead>
+  <tbody>
+    @foreach (var reminder in Model!.Reminders)
+    {
+      <tr>
+        <td>@reminder.Name</td>
+        <td>@reminder.ReminderType.Name</td>
+        <td>@TimeZoneInfo.ConvertTimeFromUtc(reminder.NextRun, Model.UserTimeZone)</td>
+        <td>
+          <a asp-action="Edit" asp-route-reminderId="@reminder.Id">Edit</a>
+          <a asp-action="Completions" asp-route-reminderId="@reminder.Id">Completions</a>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>
