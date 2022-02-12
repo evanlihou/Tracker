@@ -24,12 +24,12 @@ public class UserController : BaseController
     public async Task<ActionResult> Login([FromQuery] string token, [FromQuery] string id)
     {
         var user = await UserManager.FindByIdAsync(id);
-        if (user == null) return BadRequest();
+        if (user == null) return BadRequest("User not found");
 
         var tokenValid = await UserManager.VerifyUserTokenAsync(user,
             PasswordlessLoginTokenProvider<ApplicationUser>.Name, "telegram-token", token);
 
-        if (!tokenValid) return BadRequest();
+        if (!tokenValid) return BadRequest("Invalid login token");
         
         await UserManager.UpdateSecurityStampAsync(user);
         await _signInManager.SignInAsync(user, false, "passwordless-token");
