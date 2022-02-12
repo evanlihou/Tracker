@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
+using Tracker.Data.Migrations;
 using Tracker.Models;
+using Tracker.Services;
 
 namespace Tracker.Controllers;
 
@@ -12,6 +14,12 @@ namespace Tracker.Controllers;
 [Route("reminder")]
 public class ReminderController : BaseController
 {
+    private readonly ReminderService _reminderService;
+
+    public ReminderController(ReminderService reminderService)
+    {
+        _reminderService = reminderService;
+    }
 
     [HttpGet]
     public async Task<ActionResult> List()
@@ -33,87 +41,91 @@ public class ReminderController : BaseController
     }
 
     [HttpGet("{reminderId:int}")]
-    public async Task<ActionResult> Edit(int reminderId)
+    public async Task<ActionResult> CreateOrEdit(int reminderId)
     {
+        if (reminderId == 0) return View(new Reminder());
+        var userTimeZone = await GetUserTimeZone();
         var reminder = await Db.Reminders.Include(x => x.ReminderType).SingleOrDefaultAsync(x => x.Id == reminderId);
 
         if (reminder == null)
         {
             Response.StatusCode = StatusCodes.Status404NotFound;
+            return View(reminder);
         }
+        
+        reminder.StartDate = reminder.StartDate != null
+            ? TimeZoneInfo.ConvertTimeFromUtc((DateTime)reminder.StartDate, userTimeZone)
+            : null;
+        reminder.EndDate = reminder.EndDate != null
+            ? TimeZoneInfo.ConvertTimeFromUtc((DateTime)reminder.EndDate, userTimeZone)
+            : null;
 
         return View(reminder);
     }
 
     [HttpPost("{reminderId:int}")]
-    public async Task<ActionResult> Edit(int reminderId, [FromForm] Reminder model)
+    public async Task<ActionResult> CreateOrEdit(int reminderId, [FromForm] Reminder model)
     {
         ModelState.Remove("ReminderType");
         ModelState.Remove("UserId");
         if (!ModelState.IsValid) return View(model);
 
-        var dbReminder = await Db.Reminders.FindAsync(reminderId);
+        var isCreate = reminderId == 0;
 
-        if (dbReminder == null) return View(null);
+        Reminder dbReminder;
+
+        if (isCreate)
+        {
+            dbReminder = new Reminder()
+            {
+                UserId = UserId
+            };
+        }
+        else
+        {
+            var dbResult = await Db.Reminders.SingleOrDefaultAsync(x => x.Id == reminderId && x.UserId == UserId);
+            if (dbResult == null) return View();
+
+            dbReminder = dbResult;
+        }
+
+        var userTimeZone = await GetUserTimeZone();
         
         dbReminder.Name = model.Name;
         dbReminder.CronLocal = model.CronLocal;
-        dbReminder.ReminderTypeId = model.ReminderTypeId;
 
+        if (!await Db.ReminderTypes.AnyAsync(x => x.Id == model.ReminderTypeId && x.UserId == UserId))
+        {
+            return BadRequest();
+        }
+        dbReminder.ReminderTypeId = model.ReminderTypeId;
+        
+        if (model.StartDate == null) dbReminder.StartDate = null;
+        else dbReminder.StartDate = TimeZoneInfo.ConvertTimeToUtc((DateTime)model.StartDate, userTimeZone);
+        if (model.EndDate == null) dbReminder.EndDate = null;
+        else dbReminder.EndDate = TimeZoneInfo.ConvertTimeToUtc((DateTime)model.EndDate, userTimeZone);
+        dbReminder.ReminderMinutes = model.ReminderMinutes;
+
+        dbReminder.NextRun = await _reminderService.CalculateNextRunTime(dbReminder);
+
+        if (isCreate) await Db.Reminders.AddAsync(dbReminder);
+        
         await Db.SaveChangesAsync();
 
         return RedirectToAction("List");
     }
 
-    [HttpPost]
-    public async Task<ActionResult<Reminder>> CreateReminder([FromBody] ReminderViewModel model)
+    [HttpGet("completions/{reminderId:int}")]
+    public async Task<ActionResult> Completions(int reminderId)
     {
-        if (!ModelState.IsValid)
+        var completions = await Db.ReminderCompletions.Where(x => x.ReminderId == reminderId).OrderByDescending(x => x.CompletionTime).Take(20).ToListAsync();
+
+        if (completions.Count == 0)
         {
-            return BadRequest();
+            Response.StatusCode = StatusCodes.Status404NotFound;
         }
 
-        var existing = await Db.Reminders.AnyAsync(x =>
-                x.UserId == UserId && x.Name == model.Name &&
-                x.ReminderTypeId == model.ReminderTypeId);
-
-        if (existing)
-        {
-            return BadRequest(new
-            {
-                Message = "Reminder with this name already exists"
-            });
-        }
-
-        if (await Db.ReminderTypes.SingleOrDefaultAsync(x =>
-                x.Id == model.ReminderTypeId && x.UserId == UserId) == null)
-        {
-            return BadRequest(new
-            {
-                Message = "Reminder type not found"
-            });
-        }
-
-        var userTimeZone = (await UserManager.GetUserAsync(User)).TimeZone;
-
-        var schedule = CronScheduleBuilder.DailyAtHourAndMinute(1, 0).InTimeZone(userTimeZone);
-        var trigger = (ICronTrigger)TriggerBuilder
-            .Create()
-            .WithSchedule(schedule)
-            .Build();
-        
-        var newReminder = new Reminder
-        {
-            Name = model.Name,
-            ReminderTypeId = model.ReminderTypeId,
-            UserId = UserId,
-            CronLocal = trigger.CronExpressionString
-        };
-
-        Db.Reminders.Add(newReminder);
-        Db.SaveChanges();
-
-        return Ok(newReminder);
+        return View(completions);
     }
 
     public class ReminderViewModel
@@ -124,8 +136,5 @@ public class ReminderController : BaseController
         
         [Required]
         public int ReminderTypeId { get; set; }
-        
-        [MaxLength(100)]
-        public string? CronLocal { get; set; }
     }
 }

@@ -1,55 +1,58 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Tracker.Data;
+using Microsoft.EntityFrameworkCore;
 using Tracker.Models;
 
 namespace Tracker.Controllers;
 
 [Authorize]
-[ApiController]
 [Route("reminder-type")]
-public class ReminderTypeController : Controller
+public class ReminderTypeController : BaseController
 {
-    private readonly ApplicationDbContext _db;
-    private readonly UserManager<ApplicationUser> _userManager;
-
-    public ReminderTypeController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    [HttpGet("")]
+    public async Task<ActionResult> List()
     {
-        _db = db;
-        _userManager = userManager;
+        var types = await Db.ReminderTypes.Where(x => x.UserId == UserId).ToListAsync();
+
+        return View(types);
     }
 
-    [HttpPost]
-    public ActionResult<Reminder> CreateReminderType([FromBody] ReminderTypeViewModel model)
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult> CreateOrEdit(int id)
     {
-        if (!ModelState.IsValid)
+        if (id == 0) return View(new ReminderType());
+
+        var type = await Db.ReminderTypes.SingleOrDefaultAsync(x => x.Id == id && x.UserId == UserId);
+
+        return type == null ? View() : View(type);
+    }
+
+    [HttpPost("{id:int}")]
+    public async Task<ActionResult> CreateOrEdit(int id, [FromForm] ReminderType model)
+    {
+        ReminderType dbType;
+        var isCreate = id == 0;
+        if (isCreate) dbType = new ReminderType();
+        else
         {
-            return BadRequest();
+            var dbResult = await Db.ReminderTypes.SingleOrDefaultAsync(x => x.Id == id && x.UserId == UserId);
+            if (dbResult == null) return View();
+
+            dbType = dbResult;
         }
+
+        dbType.Name = model.Name;
+
+        if (isCreate)
+        {
+            dbType.UserId = UserId;
+            Db.ReminderTypes.Add(dbType);
+        }
+
+        await Db.SaveChangesAsync();
         
-        var existingType =
-            _db.ReminderTypes.Any(x => x.UserId == _userManager.GetUserId(User) && x.Name == model.Name);
-
-        if (existingType)
-        {
-            return BadRequest(new
-            {
-                Message = "Reminder type with this name already exists"
-            });
-        }
-
-        var newType = new ReminderType
-        {
-            Name = model.Name,
-            UserId = _userManager.GetUserId(User)
-        };
-
-        _db.ReminderTypes.Add(newType);
-        _db.SaveChanges();
-
-        return Ok(newType);
+        return RedirectToAction("List");
     }
 
     public class ReminderTypeViewModel

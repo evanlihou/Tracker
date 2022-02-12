@@ -1,0 +1,39 @@
+@using Tracker.Data
+@using Microsoft.EntityFrameworkCore
+@using System.Linq
+@using Microsoft.AspNetCore.Identity
+@model List<ReminderCompletion>
+@inject ApplicationDbContext _db
+@inject UserManager<ApplicationUser> _userManager
+
+@{
+  ViewBag.Title = $"Completions";
+  Layout = "_Layout";
+  var userTimeZone = (await _userManager.GetUserAsync(User)).TimeZone; 
+}
+
+<h2>Edit Reminder</h2>
+
+@if (Model.Count == 0)
+{
+  <div class="alert alert-danger" role="alert">
+    Reminder not found. <a asp-action="List">Return to list.</a>
+  </div>
+  return;
+}
+
+<table class="table">
+  <thead>
+  <tr>
+    <th>Completion Time</th>
+  </tr>
+  </thead>
+  <tbody>
+  @foreach (var completion in Model)
+  {
+    <tr>
+      <td>@TimeZoneInfo.ConvertTimeFromUtc(completion.CompletionTime, userTimeZone)</td>
+    </tr>
+  }
+  </tbody>
+</table>

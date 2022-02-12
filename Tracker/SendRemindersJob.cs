@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Tracker.Data;
 using Tracker.Models;
+using Tracker.Services;
 
 namespace Tracker;
 
@@ -13,13 +14,15 @@ public class SendRemindersJob : IJob
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly TelegramBotService _bot;
+    private readonly ReminderService _reminderService;
 
-    public SendRemindersJob(ILogger<SendRemindersJob> logger, ApplicationDbContext db, UserManager<ApplicationUser> userManager, TelegramBotService bot)
+    public SendRemindersJob(ILogger<SendRemindersJob> logger, ApplicationDbContext db, UserManager<ApplicationUser> userManager, TelegramBotService bot, ReminderService reminderService)
     {
         _logger = logger;
         _db = db;
         _userManager = userManager;
         _bot = bot;
+        _reminderService = reminderService;
     }
     
     public async Task Execute(IJobExecutionContext context)
@@ -28,7 +31,7 @@ public class SendRemindersJob : IJob
 
         var scheduledTime = context.ScheduledFireTimeUtc!.Value.UtcDateTime;
         var dueReminders = _db.Reminders.Include(x => x.ReminderType).Where(x =>
-            x.NextRun <= scheduledTime && (x.StartDate == null || x.StartDate <= scheduledTime) && (x.EndDate == null || x.EndDate >= scheduledTime)).AsEnumerable();
+            x.NextRun != null && x.NextRun <= scheduledTime).AsEnumerable();
 
         foreach (var reminder in dueReminders)
         {
@@ -45,17 +48,7 @@ public class SendRemindersJob : IJob
 
             if (reminder.ReminderMinutes <= 0)
             {
-                if (reminder.CronLocal == null) continue;
- 
-                 var cronExpression = new CronExpression(reminder.CronLocal)
-                 {
-                     TimeZone = user.TimeZone
-                 };
-                 
-                 var nextRun = cronExpression.GetTimeAfter(DateTimeOffset.UtcNow);
-                 
-                 if (nextRun != null)
-                     reminder.NextRun = ((DateTimeOffset)nextRun).UtcDateTime;
+                reminder.NextRun = await _reminderService.CalculateNextRunTime(reminder);
             }
             else
             {

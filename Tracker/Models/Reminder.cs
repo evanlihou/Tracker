@@ -15,7 +15,7 @@ public class Reminder : BaseModel
     [MaxLength(100)]
     public string? CronLocal { get; set; }
     
-    public DateTime NextRun { get; set; }
+    public DateTime? NextRun { get; set; }
     
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }

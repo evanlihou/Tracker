@@ -6,7 +6,9 @@
 }
 
 <h2>Reminders</h2>
-
+<p>
+  <a asp-action="CreateOrEdit" asp-route-reminderId="0">Create</a>
+</p>
 <table class="table">
   <thead>
   <tr>
@@ -22,9 +24,9 @@
       <tr>
         <td>@reminder.Name</td>
         <td>@reminder.ReminderType.Name</td>
-        <td>@TimeZoneInfo.ConvertTimeFromUtc(reminder.NextRun, Model.UserTimeZone)</td>
+        <td>@(reminder.NextRun != null ? TimeZoneInfo.ConvertTimeFromUtc((DateTime) reminder.NextRun, Model.UserTimeZone) : "(none)")</td>
         <td>
-          <a asp-action="Edit" asp-route-reminderId="@reminder.Id">Edit</a>
+          <a asp-action="CreateOrEdit" asp-route-reminderId="@reminder.Id">Edit</a>
           <a asp-action="Completions" asp-route-reminderId="@reminder.Id">Completions</a>
         </td>
       </tr>

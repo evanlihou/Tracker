@@ -9,6 +9,6 @@ public class ReminderViewModel : Reminder
     
     private TimeZoneInfo _timeZone;
     
-    public DateTime NextRunLocal => TimeZoneInfo.ConvertTimeFromUtc(NextRun, _timeZone);
+    public DateTime NextRunLocal => TimeZoneInfo.ConvertTimeFromUtc((DateTime) NextRun, _timeZone);
     
 }

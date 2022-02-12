@@ -4,14 +4,39 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using TimeZoneConverter;
 using Tracker.Models;
+using Tracker.Services;
 
 namespace Tracker.Controllers;
 
-[ApiController]
 [Authorize]
 [Route("user")]
 public class UserController : BaseController
 {
+    private readonly SignInManager<ApplicationUser> _signInManager;
+
+    public UserController(SignInManager<ApplicationUser> signInManager)
+    {
+        _signInManager = signInManager;
+    }
+
+    [AllowAnonymous]
+    [HttpGet("login")]
+    public async Task<ActionResult> Login([FromQuery] string token, [FromQuery] string id)
+    {
+        var user = await UserManager.FindByIdAsync(id);
+        if (user == null) return BadRequest();
+
+        var tokenValid = await UserManager.VerifyUserTokenAsync(user,
+            PasswordlessLoginTokenProvider<ApplicationUser>.Name, "telegram-token", token);
+
+        if (!tokenValid) return BadRequest();
+        
+        await UserManager.UpdateSecurityStampAsync(user);
+        await _signInManager.SignInAsync(user, false, "passwordless-token");
+        
+        return RedirectToAction("Index", "Home");
+    }
+    
     [HttpPut]
     public async Task<ActionResult<UserViewModel>> UpdateCurrentUser([FromBody] UserViewModel model)
     {

@@ -3,7 +3,7 @@ using Quartz;
 using Tracker.Data;
 using Tracker.Models;
 
-namespace Bot;
+namespace Tracker.Services;
 
 public class ReminderService
 {
@@ -36,31 +36,25 @@ public class ReminderService
             _logger.LogWarning("Provided nonce {Provided} does not match expected {Expected}", nonce, reminder.Nonce);
             return false;
         }
+        
+        if (completionTime == default) completionTime = DateTime.UtcNow;
 
         if (!isSkip)
         {
-            if (completionTime == default) completionTime = DateTime.UtcNow;
-            
             await _db.ReminderCompletions.AddAsync(new ReminderCompletion
             {
                 ReminderId = reminderId,
                 CompletionTime = completionTime
             }, cancellationToken);
         }
-        
-        if (reminder?.CronLocal == null) return false;
 
-        var user = await _userManager.FindByIdAsync(reminder.UserId);
-
-        var cronExpression = new CronExpression(reminder.CronLocal)
+        // If <= 0, it was already set when the reminder was sent
+        if (reminder.ReminderMinutes > 0)
         {
-            TimeZone = user.TimeZone
-        };
+            var nextRun = await CalculateNextRunTime(reminder, completionTime, cancellationToken);
         
-        var nextRun = cronExpression.GetTimeAfter(completionTime);
-        
-        if (nextRun != null)
-            reminder.NextRun = ((DateTimeOffset)nextRun).UtcDateTime;
+            reminder.NextRun = nextRun; 
+        }
 
         reminder.Nonce = _rng.Next();
 
@@ -69,5 +63,46 @@ public class ReminderService
         await _db.SaveChangesAsync(cancellationToken);
 
         return true;
+    }
+    
+    public async Task<DateTime?> CalculateNextRunTime(Reminder reminder, DateTime referenceTime = default, CancellationToken cancellationToken = default)
+    {
+        if (referenceTime == default) referenceTime = DateTime.UtcNow;
+        
+        var user = await _userManager.FindByIdAsync(reminder.UserId);
+
+        var cronExpression = reminder.CronLocal != null
+            ? new CronExpression(reminder.CronLocal)
+            {
+                TimeZone = user.TimeZone
+            }
+            : null;
+
+        if (cronExpression == null) return null;
+
+        if (reminder.StartDate != null && reminder.EndDate != null && reminder.StartDate > reminder.EndDate)
+            return null;
+        
+        if (reminder.StartDate != null && reminder.StartDate > referenceTime)
+        {
+            return (cronExpression.GetTimeAfter(new DateTimeOffset((DateTime)reminder.StartDate)))
+                ?.UtcDateTime;
+        }
+
+        if (reminder.EndDate != null && reminder.EndDate < referenceTime) return null;
+
+        return (cronExpression.GetTimeAfter(referenceTime))?.UtcDateTime;
+    }
+
+    private DateTime? GetNthNextFireTime(int n, DateTime referenceTime, CronExpression cronExpression)
+    {
+        var nextRun = cronExpression.GetTimeAfter(referenceTime);
+        for (var i = 0; i < n-1; i++)
+        {
+            if (nextRun == null) break;
+            nextRun = cronExpression.GetTimeAfter((DateTimeOffset) nextRun);
+        }
+
+        return nextRun?.UtcDateTime;
     }
 }

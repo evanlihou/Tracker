@@ -1,12 +1,13 @@
 using System.Security.Claims;
 using Bot;
-using Duende.IdentityServer;
-using Duende.IdentityServer.Models;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Tracker;
 using Tracker.Data;
 using Tracker.Models;
+using Tracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,12 +17,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+builder.Services.AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>();
+
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = true;
         options.ClaimsIdentity.UserIdClaimType = ClaimTypes.NameIdentifier;
     })
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders()
+    .AddPasswordlessLoginTokenProvider();
+
+builder.Services.Configure<PasswordlessLoginTokenProviderOptions>(opt => opt.TokenLifespan = TimeSpan.FromMinutes(15));
 
 builder.Services.AddQuartz(q =>
 {
@@ -46,7 +53,10 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
 builder.Services.AddSingleton(x => new TelegramSettings
-    { AccessToken = builder.Configuration["Telegram:AccessToken"] });
+{
+    AccessToken = builder.Configuration["Telegram:AccessToken"],
+    BaseUrl = builder.Configuration["BaseUrl"]
+});
 builder.Services.AddScoped<TelegramBotService>();
 builder.Services.AddScoped<ReminderService>();
 builder.Services.AddScoped<PersistentConfigRepository>();

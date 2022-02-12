@@ -1,21 +1,21 @@
-﻿using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Duende.IdentityServer.EntityFramework.Options;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Tracker.Models;
 
 namespace Tracker.Data;
 
-public class ApplicationDbContext : ApiAuthorizationDbContext<ApplicationUser>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionKeyContext
 {
-    public ApplicationDbContext(DbContextOptions options, IOptions<OperationalStoreOptions> operationalStoreOptions)
-        : base(options, operationalStoreOptions)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt) : base(opt)
     {
+        
     }
-
     public DbSet<Reminder> Reminders { get; set; }
     public DbSet<ReminderType> ReminderTypes { get; set; }
     public DbSet<PersistentConfig> PersistentConfigs { get; set; }
     public DbSet<ReminderCompletion> ReminderCompletions { get; set; }
     public DbSet<ReminderMessage> ReminderMessages { get; set; }
+    
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 }
