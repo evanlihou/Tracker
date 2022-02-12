@@ -98,7 +98,7 @@ public class TelegramBotService
 
                     if (token == null) continue;
 
-                    var url = _baseUrl + "user/login?token=" + Uri.EscapeDataString(Uri.EscapeDataString(token)) + "&id=" + sendingUser.Id;
+                    var url = _baseUrl + "user/login?token=" + Uri.EscapeDataString(token) + "&id=" + sendingUser.Id;
 
                     await _botClient.SendTextMessageAsync(chatId,
                         $"You can click the button below to log in to the website. The link will only be valid for 15 minutes.",
