@@ -11,11 +11,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     {
         
     }
-    public DbSet<Reminder> Reminders { get; set; }
-    public DbSet<ReminderType> ReminderTypes { get; set; }
-    public DbSet<PersistentConfig> PersistentConfigs { get; set; }
-    public DbSet<ReminderCompletion> ReminderCompletions { get; set; }
-    public DbSet<ReminderMessage> ReminderMessages { get; set; }
-    
-    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
+
+    public DbSet<Reminder> Reminders => Set<Reminder>();
+    public DbSet<ReminderType> ReminderTypes => Set<ReminderType>();
+    public DbSet<PersistentConfig> PersistentConfigs => Set<PersistentConfig>();
+    public DbSet<ReminderCompletion> ReminderCompletions => Set<ReminderCompletion>();
+    public DbSet<ReminderMessage> ReminderMessages => Set<ReminderMessage>();
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 }

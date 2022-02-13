@@ -21,12 +21,15 @@
           <li class="nav-item">
             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link text-dark" asp-area="" asp-controller="Reminder" asp-action="List">Reminders</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-dark" asp-area="" asp-controller="ReminderType" asp-action="List">Reminder Types</a>
-          </li>
+          @if (User.Identity?.IsAuthenticated ?? false)
+          {
+            <li class="nav-item">
+              <a class="nav-link text-dark" asp-area="" asp-controller="Reminder" asp-action="List">Reminders</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-dark" asp-area="" asp-controller="ReminderType" asp-action="List">Reminder Types</a>
+            </li>
+          }
         </ul>
         <partial name="_LoginPartial"/>
       </div>

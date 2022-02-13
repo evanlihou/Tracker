@@ -27,7 +27,7 @@ public class UserController : BaseController
         if (user == null) return BadRequest("User not found");
 
         var tokenValid = await UserManager.VerifyUserTokenAsync(user,
-            PasswordlessLoginTokenProvider<ApplicationUser>.Name, "telegram-token", token);
+            PasswordlessLoginTokenProvider.Name, "telegram-token", token);
 
         if (!tokenValid) return BadRequest("Invalid login token");
         

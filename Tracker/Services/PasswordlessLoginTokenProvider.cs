@@ -11,7 +11,10 @@ public class PasswordlessLoginTokenProvider<TUser> : DataProtectorTokenProvider<
     public PasswordlessLoginTokenProvider(IDataProtectionProvider dataProtectionProvider, IOptions<PasswordlessLoginTokenProviderOptions> options, ILogger<PasswordlessLoginTokenProvider<TUser>> logger) : base(dataProtectionProvider, options, logger)
     {
     }
+}
 
+public class PasswordlessLoginTokenProvider
+{
     public const string Name = "PasswordlessLoginTokenProvider";
 }
 
@@ -25,7 +28,7 @@ public static class CustomIdentityBuilderExtensions
     {
         var userType = builder.UserType;
         var totpProvider = typeof(PasswordlessLoginTokenProvider<>).MakeGenericType(userType);
-        var providerInstance = builder.AddTokenProvider(PasswordlessLoginTokenProvider<ApplicationUser>.Name, totpProvider);
+        var providerInstance = builder.AddTokenProvider(PasswordlessLoginTokenProvider.Name, totpProvider);
 
         return providerInstance;
     }

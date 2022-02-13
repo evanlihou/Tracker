@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tracker.Models;
+using Tracker.Models.ViewModels;
 
 namespace Tracker.Controllers;
 
@@ -18,47 +19,52 @@ public class ReminderTypeController : BaseController
         return View(types);
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult> CreateOrEdit(int id)
+    [HttpGet("create")]
+    public ActionResult Create(int id)
     {
-        if (id == 0) return View(new ReminderType());
-
-        var type = await Db.ReminderTypes.SingleOrDefaultAsync(x => x.Id == id && x.UserId == UserId);
-
-        return type == null ? View() : View(type);
+        return View();
     }
 
-    [HttpPost("{id:int}")]
-    public async Task<ActionResult> CreateOrEdit(int id, [FromForm] ReminderType model)
+    [HttpPost("create")]
+    public async Task<ActionResult> Create([FromForm] ReminderType model)
     {
-        ReminderType dbType;
-        var isCreate = id == 0;
-        if (isCreate) dbType = new ReminderType();
-        else
+        ModelState.Remove("UserId");
+        if (!ModelState.IsValid) return View(model);
+        
+        var dbType = new ReminderType()
         {
-            var dbResult = await Db.ReminderTypes.SingleOrDefaultAsync(x => x.Id == id && x.UserId == UserId);
-            if (dbResult == null) return View();
-
-            dbType = dbResult;
-        }
-
-        dbType.Name = model.Name;
-
-        if (isCreate)
-        {
-            dbType.UserId = UserId;
-            Db.ReminderTypes.Add(dbType);
-        }
+            UserId = UserId,
+            Name = model.Name
+        };
+        
+        Db.ReminderTypes.Add(dbType);
 
         await Db.SaveChangesAsync();
         
         return RedirectToAction("List");
     }
 
-    public class ReminderTypeViewModel
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult> Edit(int id)
     {
-        [MaxLength(100)]
-        [Required]
-        public string? Name { get; set; }
+        var type = await Db.ReminderTypes.SingleOrDefaultAsync(x => x.Id == id && x.UserId == UserId);
+
+        return View(type);
+    }
+    
+    [HttpPost("{id:int}")]
+    public async Task<ActionResult> Edit(int id, [FromForm] ReminderType model)
+    {
+        ModelState.Remove("UserId");
+        if (!ModelState.IsValid) return View(model);
+        
+        var dbType = await Db.ReminderTypes.SingleOrDefaultAsync(x => x.Id == id && x.UserId == UserId);
+        if (dbType == null) return NotFound();
+
+        dbType.Name = model.Name;
+
+        await Db.SaveChangesAsync();
+
+        return RedirectToAction("List");
     }
 }

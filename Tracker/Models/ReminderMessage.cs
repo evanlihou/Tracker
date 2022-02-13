@@ -7,7 +7,7 @@ public class ReminderMessage : BaseModel
     [Required]
     public int ReminderId { get; set; }
     
-    public Reminder Reminder { get; set; }
+    public Reminder? Reminder { get; set; }
     
     /// <summary>
     /// Telegram message ID

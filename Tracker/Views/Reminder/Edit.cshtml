@@ -1,0 +1,20 @@
+@model Reminder
+
+@{
+  ViewBag.Title = $"Edit {Model?.Name ?? "Reminder"}";
+  Layout = "_Layout";
+}
+
+<h2>Edit Reminder</h2>
+
+@if (Model == null)
+{
+  <div class="alert alert-danger" role="alert">
+    Reminder type not found. <a asp-action="List">Return to list.</a>
+  </div>
+  return;
+}
+
+<form asp-action="Edit" method="post">
+  <partial name="_CreateOrEditForm" model="Model" />
+</form>

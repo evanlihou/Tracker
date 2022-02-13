@@ -4,13 +4,12 @@ namespace Tracker.Models;
 
 public class Reminder : BaseModel
 {
-    [Required]
-    public string UserId { get; set; }
-    
+    [Required] public string UserId { get; init; } = null!;
+
     [MaxLength(100)]
     [Display(Name = "Name")]
     [Required]
-    public string? Name { get; set; }
+    public string Name { get; set; } = null!;
     
     [MaxLength(100)]
     public string? CronLocal { get; set; }
@@ -23,7 +22,7 @@ public class Reminder : BaseModel
     [Required]
     public int ReminderTypeId { get; set; }
     
-    public ReminderType ReminderType { get; set; }
+    public ReminderType? ReminderType { get; set; }
 
     public int ReminderMinutes { get; set; } = 10;
     

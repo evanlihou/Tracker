@@ -40,10 +40,54 @@ public class ReminderController : BaseController
         public TimeZoneInfo UserTimeZone = null!;
     }
 
-    [HttpGet("{reminderId:int}")]
-    public async Task<ActionResult> CreateOrEdit(int reminderId)
+    [HttpGet("create")]
+    public ActionResult Create()
     {
-        if (reminderId == 0) return View(new Reminder());
+        return View();
+    }
+
+    [HttpPost("create")]
+
+    public async Task<ActionResult> Create([FromForm] Reminder model)
+    {
+        ModelState.Remove("ReminderType");
+        ModelState.Remove("UserId");
+        if (!ModelState.IsValid) return View(model);
+        
+        var userTimeZone = await GetUserTimeZone();
+        
+        var dbReminder = new Reminder
+        {
+            UserId = UserId,
+            Name = model.Name,
+            CronLocal = model.CronLocal
+        };
+
+        if (!await Db.ReminderTypes.AnyAsync(x => x.Id == model.ReminderTypeId && x.UserId == UserId))
+        {
+            return BadRequest();
+        }
+        
+        dbReminder.ReminderTypeId = model.ReminderTypeId;
+        
+        if (model.StartDate == null) dbReminder.StartDate = null;
+        else dbReminder.StartDate = TimeZoneInfo.ConvertTimeToUtc((DateTime)model.StartDate, userTimeZone);
+        if (model.EndDate == null) dbReminder.EndDate = null;
+        else dbReminder.EndDate = TimeZoneInfo.ConvertTimeToUtc((DateTime)model.EndDate, userTimeZone);
+        dbReminder.ReminderMinutes = model.ReminderMinutes;
+
+        dbReminder.NextRun = await _reminderService.CalculateNextRunTime(dbReminder);
+
+        await Db.Reminders.AddAsync(dbReminder);
+
+        await Db.SaveChangesAsync();
+
+        return RedirectToAction("List");
+    }
+    
+    [HttpGet("{reminderId:int}")]
+    public async Task<ActionResult> Edit(int reminderId)
+    {
         var userTimeZone = await GetUserTimeZone();
         var reminder = await Db.Reminders.Include(x => x.ReminderType).SingleOrDefaultAsync(x => x.Id == reminderId);
 
@@ -64,30 +108,15 @@ public class ReminderController : BaseController
     }
 
     [HttpPost("{reminderId:int}")]
-    public async Task<ActionResult> CreateOrEdit(int reminderId, [FromForm] Reminder model)
+    public async Task<ActionResult> Edit(int reminderId, [FromForm] Reminder model)
     {
         ModelState.Remove("ReminderType");
         ModelState.Remove("UserId");
         if (!ModelState.IsValid) return View(model);
 
-        var isCreate = reminderId == 0;
-
-        Reminder dbReminder;
-
-        if (isCreate)
-        {
-            dbReminder = new Reminder()
-            {
-                UserId = UserId
-            };
-        }
-        else
-        {
-            var dbResult = await Db.Reminders.SingleOrDefaultAsync(x => x.Id == reminderId && x.UserId == UserId);
-            if (dbResult == null) return View();
-
-            dbReminder = dbResult;
-        }
+        var dbReminder = await Db.Reminders.SingleOrDefaultAsync(x => x.Id == reminderId && x.UserId == UserId);
+        if (dbReminder == null) return BadRequest();
+        
 
         var userTimeZone = await GetUserTimeZone();
         
@@ -108,8 +137,6 @@ public class ReminderController : BaseController
 
         dbReminder.NextRun = await _reminderService.CalculateNextRunTime(dbReminder);
 
-        if (isCreate) await Db.Reminders.AddAsync(dbReminder);
-        
         await Db.SaveChangesAsync();
 
         return RedirectToAction("List");
@@ -126,15 +153,5 @@ public class ReminderController : BaseController
         }
 
         return View(completions);
-    }
-
-    public class ReminderViewModel
-    {
-        [MaxLength(100)]
-        [Required]
-        public string Name { get; set; }
-        
-        [Required]
-        public int ReminderTypeId { get; set; }
     }
 }

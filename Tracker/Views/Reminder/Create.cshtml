@@ -1,0 +1,12 @@
+@model Tracker.Models.Reminder
+
+@{
+  ViewBag.Title = $"Create Reminder";
+  Layout = "_Layout";
+}
+
+<h2>Create Reminder</h2>
+
+<form asp-action="Create" method="post">
+  <partial name="_CreateOrEditForm" model="Model" />
+</form>

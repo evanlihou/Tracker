@@ -7,8 +7,8 @@ public class ReminderViewModel : Reminder
         _timeZone = timeZone;
     }
     
-    private TimeZoneInfo _timeZone;
+    private readonly TimeZoneInfo _timeZone;
     
-    public DateTime NextRunLocal => TimeZoneInfo.ConvertTimeFromUtc((DateTime) NextRun, _timeZone);
+    public DateTime? NextRunLocal => (NextRun != null ? TimeZoneInfo.ConvertTimeFromUtc((DateTime) NextRun, _timeZone) : null);
     
 }
