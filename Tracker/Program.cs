@@ -19,6 +19,10 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>();
 
+builder.Services.AddSession(opt =>
+{
+    opt.IdleTimeout = TimeSpan.FromHours(24);
+});
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = true;
