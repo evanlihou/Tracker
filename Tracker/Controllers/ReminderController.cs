@@ -75,6 +75,7 @@ public class ReminderController : BaseController
         if (model.EndDate == null) dbReminder.EndDate = null;
         else dbReminder.EndDate = TimeZoneInfo.ConvertTimeToUtc((DateTime)model.EndDate, userTimeZone);
         dbReminder.ReminderMinutes = model.ReminderMinutes;
+        dbReminder.EveryNTriggers = model.EveryNTriggers;
 
         dbReminder.NextRun = await _reminderService.CalculateNextRunTime(dbReminder);
 
