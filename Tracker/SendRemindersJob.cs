@@ -48,6 +48,7 @@ public class SendRemindersJob : IJob
 
             if (reminder.ReminderMinutes <= 0)
             {
+                reminder.LastRun = scheduledTime;
                 reminder.NextRun = await _reminderService.CalculateNextRunTime(reminder);
             }
             else

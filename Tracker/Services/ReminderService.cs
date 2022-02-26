@@ -39,6 +39,8 @@ public class ReminderService
         
         if (completionTime == default) completionTime = DateTime.UtcNow;
 
+        reminder.LastRun = completionTime;
+        
         if (!isSkip)
         {
             await _db.ReminderCompletions.AddAsync(new ReminderCompletion
@@ -85,16 +87,15 @@ public class ReminderService
         
         if (reminder.StartDate != null && reminder.StartDate > referenceTime)
         {
-            return (cronExpression.GetTimeAfter(new DateTimeOffset((DateTime)reminder.StartDate)))
-                ?.UtcDateTime;
+            return GetNthNextFireTime(1, (DateTime) reminder.StartDate, cronExpression);
         }
 
         if (reminder.EndDate != null && reminder.EndDate < referenceTime) return null;
 
-        return (cronExpression.GetTimeAfter(referenceTime))?.UtcDateTime;
+        return GetNthNextFireTime(reminder.LastRun != null ? reminder.EveryNTriggers : 1, referenceTime, cronExpression);
     }
 
-    private DateTime? GetNthNextFireTime(int n, DateTime referenceTime, CronExpression cronExpression)
+    private static DateTime? GetNthNextFireTime(int n, DateTime referenceTime, CronExpression cronExpression)
     {
         var nextRun = cronExpression.GetTimeAfter(referenceTime);
         for (var i = 0; i < n-1; i++)

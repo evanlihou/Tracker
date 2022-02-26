@@ -26,10 +26,11 @@ public class TelegramBotService
     private readonly ReminderService _reminderService;
     private readonly PersistentConfigRepository _configRepo;
     private readonly Uri _baseUrl;
+    private readonly IWebHostEnvironment _environment;
 
     public TelegramBotService(TelegramSettings telegramSettings, ILogger<TelegramBotService> logger,
         ApplicationDbContext db, UserManager<ApplicationUser> userManager, PersistentConfigRepository configRepo,
-        ReminderService reminderService)
+        ReminderService reminderService, IWebHostEnvironment environment)
     {
         _botClient = new TelegramBotClient(telegramSettings.AccessToken);
         _logger = logger;
@@ -37,6 +38,7 @@ public class TelegramBotService
         _userManager = userManager;
         _configRepo = configRepo;
         _reminderService = reminderService;
+        _environment = environment;
         _baseUrl = new Uri(telegramSettings.BaseUrl);
     }
 
@@ -152,14 +154,27 @@ public class TelegramBotService
         var chatId = message.Chat.Id;
 
         var sendingUser = await _db.Users.SingleOrDefaultAsync(x => x.TelegramUserId == chatId);
-        if (sendingUser == null) return false;
+        if (sendingUser == null)
+        {
+            _logger.LogInformation("User not found to log in");
+            return false;
+        }
 
         var token = await _userManager.GenerateUserTokenAsync(sendingUser,
             PasswordlessLoginTokenProvider.Name, "telegram-token");
-        if (token == null) return false;
+        if (token == null)
+        {
+            _logger.LogInformation("Could not generate token for user");
+            return false;
+        }
 
         var url = _baseUrl + "user/login?token=" + Uri.EscapeDataString(token) + "&id=" + sendingUser.Id;
 
+        if (_environment.IsDevelopment())
+        {
+            _logger.LogInformation("Login URL {Url}", url);
+        }
+        
         await _botClient.SendTextMessageAsync(chatId,
             $"You can click the button below to log in to the website. The link will only be valid for 15 minutes.",
             replyToMessageId: message.MessageId,

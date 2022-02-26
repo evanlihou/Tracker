@@ -47,5 +47,10 @@
   <div class="form-text">Enter -1 for one reminder with auto completion</div>
   <span asp-validation-for="ReminderMinutes" class="text-danger"></span>
 </div>
+<div class="mb-3">
+  <label asp-for="EveryNTriggers" class="form-label">Run every X cron triggers</label>
+  <input type="number" required class="form-control" asp-for="EveryNTriggers">
+  <span asp-validation-for="EveryNTriggers" class="text-danger"></span>
+</div>
 
 <button type="submit" class="btn btn-primary">Save</button>

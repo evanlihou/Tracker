@@ -13,7 +13,10 @@ public class Reminder : BaseModel
     
     [MaxLength(100)]
     public string? CronLocal { get; set; }
+
+    public int EveryNTriggers { get; set; } = 1;
     
+    public DateTime? LastRun { get; set; }
     public DateTime? NextRun { get; set; }
     
     public DateTime? StartDate { get; set; }
