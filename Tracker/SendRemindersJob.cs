@@ -44,7 +44,7 @@ public class SendRemindersJob : IJob
             
             _logger.LogInformation("Sending reminder to user {User} for reminder {Reminder}", user.Id, reminder.Id);
 
-            await _bot.SendReminderToUser(user.TelegramUserId, $"Reminder: {reminder.ReminderType!.Name} - {reminder.Name}", reminder.Id, reminder.Nonce ?? 0);
+            await _bot.SendReminderToUser(user.TelegramUserId, reminder.IsActionable, $"Reminder: {reminder.ReminderType!.Name} - {reminder.Name}", reminder.Id, reminder.Nonce ?? 0);
 
             if (reminder.ReminderMinutes <= 0)
             {

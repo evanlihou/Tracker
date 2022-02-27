@@ -55,23 +55,24 @@ public class TelegramBotService
         return true;
     }
 
-    public async Task<bool> SendReminderToUser(long? userId, string message, int id, int nonce)
+    public async Task<bool> SendReminderToUser(long? userId, bool isActionable, string message, int id, int nonce)
     {
         if (userId == null) return false;
 
         var sentMessage = await _botClient.SendTextMessageAsync(new ChatId((long)userId), message,
-            replyMarkup: new InlineKeyboardMarkup(
+            replyMarkup: isActionable ? new InlineKeyboardMarkup(
                 new[]
                 {
                     InlineKeyboardButton.WithCallbackData("Done", $"done[{id}][n={nonce}]"),
                     InlineKeyboardButton.WithCallbackData("Skip", $"skip[{id}][n={nonce}]")
-                }));
+                }) : null);
 
-        _db.ReminderMessages.Add(new ReminderMessage
-        {
-            ReminderId = id,
-            MessageId = sentMessage.MessageId
-        });
+        if (isActionable)
+            _db.ReminderMessages.Add(new ReminderMessage
+            {
+                ReminderId = id,
+                MessageId = sentMessage.MessageId
+            });
 
         await _db.SaveChangesAsync();
 

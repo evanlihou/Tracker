@@ -1,10 +1,6 @@
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Quartz;
-using Tracker.Data.Migrations;
 using Tracker.Models;
 using Tracker.Services;
 
@@ -75,6 +71,7 @@ public class ReminderController : BaseController
         if (model.EndDate == null) dbReminder.EndDate = null;
         else dbReminder.EndDate = TimeZoneInfo.ConvertTimeToUtc((DateTime)model.EndDate, userTimeZone);
         dbReminder.ReminderMinutes = model.ReminderMinutes;
+        dbReminder.IsActionable = model.IsActionable;
 
         dbReminder.NextRun = await _reminderService.CalculateNextRunTime(dbReminder);
 
@@ -135,8 +132,17 @@ public class ReminderController : BaseController
         else dbReminder.EndDate = TimeZoneInfo.ConvertTimeToUtc((DateTime)model.EndDate, userTimeZone);
         dbReminder.ReminderMinutes = model.ReminderMinutes;
         dbReminder.EveryNTriggers = model.EveryNTriggers;
+        dbReminder.IsActionable = model.IsActionable;
 
-        dbReminder.NextRun = await _reminderService.CalculateNextRunTime(dbReminder, dbReminder.LastRun ?? default);
+        if (dbReminder.NextRun == null)
+        {
+            // If they're re-enabling, we need to re-calculate a new next run to base it off of
+            dbReminder.NextRun = await _reminderService.CalculateNextRunTime(dbReminder);
+        }
+        else
+        {
+            dbReminder.NextRun = await _reminderService.CalculateNextRunTime(dbReminder, dbReminder.LastRun ?? default);
+        }
 
         await Db.SaveChangesAsync();
 

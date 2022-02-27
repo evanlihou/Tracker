@@ -24,6 +24,18 @@
   <span asp-validation-for="ReminderTypeId" class="text-danger"></span>
 </div>
 <div class="mb-3">
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" asp-for="IsActionable">
+    <label class="form-check-label" asp-for="IsActionable">
+      Actionable?
+    </label>
+    <div class="form-text">
+      If checked, completions will be tracked, and buttons will be sent with each reminder to mark an action
+    </div>
+    <span asp-validation-for="IsActionable" class="text-danger"></span>
+  </div>
+</div>
+<div class="mb-3">
   <label asp-for="CronLocal" class="form-label" aria-describedby="cronHelp">Cron Expression</label>
   <input type="text" asp-for="CronLocal" class="form-control"/>
   <div class="form-text">This will be a user-friendly UI control at some point...</div>

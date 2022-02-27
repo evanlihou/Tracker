@@ -27,7 +27,12 @@
         <td>@(reminder.NextRun != null ? TimeZoneInfo.ConvertTimeFromUtc((DateTime) reminder.NextRun, Model.UserTimeZone) : "(none)")</td>
         <td>
           <a asp-action="Edit" asp-route-reminderId="@reminder.Id">Edit</a>
-          <a asp-action="Completions" asp-route-reminderId="@reminder.Id">Completions</a>
+          @{
+            if (reminder.IsActionable)
+            {
+              <a asp-action="Completions" asp-route-reminderId="@reminder.Id">Completions</a>
+            }
+          }
         </td>
       </tr>
     }
