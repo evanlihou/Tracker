@@ -255,26 +255,26 @@ public class TelegramBotService
             _logger.LogWarning("Failed to mark completion for the reminder");
             return false;
         }
-    
-        var reminderMessages = _db.ReminderMessages.Where(x => x.ReminderId == reminder.Id);
-
-        List<Task> deletedMessageTasks = new();
-        foreach (var message in reminderMessages)
-        {
-            deletedMessageTasks.Add(_botClient.DeleteMessageAsync(user.TelegramUserId!, message.MessageId));
-        }
-
+        
         try
         {
+            var reminderMessages = _db.ReminderMessages.Where(x => x.ReminderId == reminder.Id);
+
+            List<Task> deletedMessageTasks = new();
+            foreach (var message in reminderMessages)
+            {
+                deletedMessageTasks.Add(_botClient.DeleteMessageAsync(user.TelegramUserId!, message.MessageId));
+            }
+            
             if (deletedMessageTasks.Any()) await Task.WhenAll(deletedMessageTasks);
+            
+            _db.ReminderMessages.RemoveRange(reminderMessages);
         }
-        catch (AggregateException ex)
+        catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to delete message(s)");
         }
-
-        _db.ReminderMessages.RemoveRange(reminderMessages);
-
+        
         await _db.SaveChangesAsync();
 
         await SendMessageToUser(user.TelegramUserId, $"{reminder.Name} marked as {ActionToHumanReadable(action)}");
