@@ -47,11 +47,11 @@ public class TelegramBotService
         return await _botClient.GetMeAsync();
     }
 
-    private async Task<bool> SendMessageToUser(long? userId, string message)
+    private async Task<bool> SendMessageToUser(long? userId, string message, bool silent = false)
     {
         if (userId == null) return false;
 
-        await _botClient.SendTextMessageAsync(new ChatId((long)userId), message);
+        await _botClient.SendTextMessageAsync(new ChatId((long)userId), message, disableNotification: silent);
         return true;
     }
 
@@ -277,7 +277,7 @@ public class TelegramBotService
         
         await _db.SaveChangesAsync();
 
-        await SendMessageToUser(user.TelegramUserId, $"{reminder.Name} marked as {ActionToHumanReadable(action)}");
+        await SendMessageToUser(user.TelegramUserId, $"{reminder.Name} marked as {ActionToHumanReadable(action)}", silent: true);
 
         return true;
     }
