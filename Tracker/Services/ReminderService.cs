@@ -70,7 +70,7 @@ public class ReminderService
     public async Task<DateTime?> CalculateNextRunTime(Reminder reminder, DateTime referenceTime = default, CancellationToken cancellationToken = default)
     {
         if (referenceTime == default) referenceTime = DateTime.UtcNow;
-        
+
         var user = await _userManager.FindByIdAsync(reminder.UserId);
 
         var cronExpression = reminder.CronLocal != null

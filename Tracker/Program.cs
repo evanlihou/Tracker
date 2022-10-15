@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
+using Telegram.Bot;
+using Telegram.Bot.Polling;
 using Tracker;
 using Tracker.Data;
 using Tracker.Models;
@@ -34,34 +36,36 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 
 builder.Services.Configure<PasswordlessLoginTokenProviderOptions>(opt => opt.TokenLifespan = TimeSpan.FromMinutes(15));
 
-builder.Services.AddQuartz(q =>
-{
-    q.SchedulerId = "reminder-scheduler";
-    q.UseMicrosoftDependencyInjectionJobFactory();
-
-    q.ScheduleJob<SendRemindersJob>(trigger => trigger
-        .WithIdentity("Send Reminders Job")
-        .WithDescription("Get reminders that are past due for sending and send them out")
-        .StartNow().WithDailyTimeIntervalSchedule(s => s.WithIntervalInSeconds(30))
-    );
-
-    q.ScheduleJob<ProcessTelegramUpdatesJob>(trigger => trigger
-        .WithIdentity("Process Telegram Updates")
-        .WithDescription("Process new replies")
-        .StartNow().WithDailyTimeIntervalSchedule(s => s.WithIntervalInSeconds(5)));
-});
-
-builder.Services.AddQuartzHostedService();
-
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-builder.Services.AddSingleton(x => new TelegramSettings
+if (!string.IsNullOrEmpty(builder.Configuration["Telegram:AccessToken"]))
 {
-    AccessToken = builder.Configuration["Telegram:AccessToken"],
-    BaseUrl = builder.Configuration["BaseUrl"]
-});
-builder.Services.AddScoped<TelegramBotService>();
+    builder.Services.AddQuartzHostedService();
+
+    builder.Services.AddQuartz(q =>
+    {
+        q.SchedulerId = "reminder-scheduler";
+        q.UseMicrosoftDependencyInjectionJobFactory();
+
+        q.ScheduleJob<SendRemindersJob>(trigger => trigger
+            .WithIdentity("Send Reminders Job")
+            .WithDescription("Get reminders that are past due for sending and send them out")
+            .StartNow().WithDailyTimeIntervalSchedule(s => s.WithIntervalInSeconds(30))
+        );
+    });
+    
+    builder.Services.AddSingleton(x => new TelegramSettings
+    {
+        AccessToken = builder.Configuration["Telegram:AccessToken"],
+        BaseUrl = builder.Configuration["BaseUrl"]
+    });
+    builder.Services.AddSingleton(x => new TelegramBotClient(builder.Configuration["Telegram:AccessToken"]));
+    builder.Services.AddScoped<TelegramBotService>();
+    builder.Services.AddHostedService<TelegramPollingService>();
+    builder.Services.AddScoped<IUpdateHandler, TelegramUpdateHandler>();
+}
+
 builder.Services.AddScoped<ReminderService>();
 builder.Services.AddScoped<PersistentConfigRepository>();
 
