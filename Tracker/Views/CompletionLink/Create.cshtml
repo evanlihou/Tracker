@@ -1,0 +1,12 @@
+@model CompletionLink
+
+@{
+  ViewBag.Title = $"Create Completion Link";
+  Layout = "_Layout";
+}
+
+<h2>@ViewBag.Title</h2>
+
+<form asp-action="Create" method="post">
+  <partial name="_CreateOrEditForm" model="Model" />
+</form>
