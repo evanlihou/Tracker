@@ -24,10 +24,13 @@
           @if (User.Identity?.IsAuthenticated ?? false)
           {
             <li class="nav-item">
-              <a class="nav-link text-dark" asp-area="" asp-controller="Reminder" asp-action="List">Reminders</a>
+              <a class="nav-link text-dark" asp-controller="Reminder" asp-action="List">Reminders</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link text-dark" asp-area="" asp-controller="ReminderType" asp-action="List">Reminder Types</a>
+              <a class="nav-link text-dark" asp-controller="ReminderType" asp-action="List">Reminder Types</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-dark" asp-controller="CompletionLink" asp-action="List">Completion Links</a>
             </li>
           }
         </ul>

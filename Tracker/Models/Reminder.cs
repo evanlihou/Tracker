@@ -35,6 +35,8 @@ public class Reminder : BaseModel
     /// A random value to prevent multiple completions for one reminder
     /// </summary>
     public int? Nonce { get; set; }
+    
+    public ICollection<CompletionLink>? CompletionLinks { get; set; }
 
     public virtual bool IsOwnedBy(string userId) => UserId == userId;
 }

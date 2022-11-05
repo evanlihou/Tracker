@@ -1,0 +1,18 @@
+@model Tracker.Models.CompletionLink
+@{
+  var reminders = ((List<Reminder>)ViewBag.Reminders).Select(x => new SelectListItem(x.Name, x.Id.ToString(), Model?.Reminders?.Any(y => y.Id == x.Id) ?? false));
+}
+
+<div class="mb-3">
+  <label asp-for="Name" class="form-label">Name</label>
+  <input type="text" required class="form-control" asp-for="Name">
+  <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+  <label asp-for="Reminders" class="form-label">Reminders</label>
+  <select asp-for="Reminders" asp-items="reminders"></select>
+  <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+
+<button type="submit" class="btn btn-primary">Save</button>

@@ -11,6 +11,8 @@
     .Select(x => new SelectListItem(x.Name, x.Id.ToString())).ToListAsync();
 }
 
+@Html.ValidationSummary(false, "", new { @class = "text-danger" })
+
 <div class="mb-3">
   <label asp-for="Name" class="form-label">Name</label>
   <input type="text" required class="form-control" asp-for="Name">
@@ -56,7 +58,7 @@
 <div class="mb-3">
   <label asp-for="ReminderMinutes" class="form-label">Minutes between reminders</label>
   <input type="number" required class="form-control" asp-for="ReminderMinutes">
-  <div class="form-text">Enter -1 for one reminder with auto completion</div>
+  <div class="form-text">Enter -1 for one reminder</div>
   <span asp-validation-for="ReminderMinutes" class="text-danger"></span>
 </div>
 <div class="mb-3">

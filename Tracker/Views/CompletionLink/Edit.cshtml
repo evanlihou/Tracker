@@ -1,0 +1,20 @@
+@model Tracker.Models.CompletionLink
+
+@{
+  ViewBag.Title = $"Edit {Model?.Name ?? "Reminder Type"}";
+  Layout = "_Layout";
+}
+
+<h2>@ViewBag.Title</h2>
+
+@if (Model == null)
+{
+  <div class="alert alert-danger" role="alert">
+    Completion link not found. <a asp-action="List">Return to list.</a>
+  </div>
+  return;
+}
+
+<form asp-action="Edit" method="post">
+  <partial name="_CreateOrEditForm" model="Model" />
+</form>

@@ -18,6 +18,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     public DbSet<PersistentConfig> PersistentConfigs => Set<PersistentConfig>();
     public DbSet<ReminderCompletion> ReminderCompletions => Set<ReminderCompletion>();
     public DbSet<ReminderMessage> ReminderMessages => Set<ReminderMessage>();
+
+    public DbSet<CompletionLink> CompletionLinks => Set<CompletionLink>();
+    
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
