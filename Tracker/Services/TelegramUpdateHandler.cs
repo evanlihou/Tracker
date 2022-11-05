@@ -60,7 +60,7 @@ public class TelegramUpdateHandler : IUpdateHandler
         CancellationToken cancellationToken)
     {
         _logger.LogInformation("Processing update {}", update.Id);
-        await _configRepo.UpdateByCode("TG_LAST_UPDATE_PROCESSED", (update.Id + 1).ToString(), cancellationToken);
+        await _configRepo.UpdateByCode("TG_LAST_UPDATE_PROCESSED", update.Id.ToString(), cancellationToken);
         var handler = update switch
         {
             { Message: { } message } => OnMessageReceived(message, cancellationToken),
