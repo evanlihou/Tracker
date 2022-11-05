@@ -14,6 +14,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     }
 
     public DbSet<Reminder> Reminders => Set<Reminder>();
+    public DbSet<OneTimeReminder> OneTimeReminders => Set<OneTimeReminder>();
     public DbSet<ReminderType> ReminderTypes => Set<ReminderType>();
     public DbSet<PersistentConfig> PersistentConfigs => Set<PersistentConfig>();
     public DbSet<ReminderCompletion> ReminderCompletions => Set<ReminderCompletion>();

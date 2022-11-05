@@ -5,7 +5,7 @@
     ViewData["Title"] = "Profile";
     ViewData["ActivePage"] = ManageNavPages.Index;
 
-    var timeZoneSelections = TZConvert.KnownIanaTimeZoneNames.Select(x => new SelectListItem(x, x));
+    var timeZoneSelections = TZConvert.KnownIanaTimeZoneNames.OrderBy(x => x).Select(x => new SelectListItem(x, x));
 }
 
 <h3>@ViewData["Title"]</h3>

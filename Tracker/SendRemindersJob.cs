@@ -28,7 +28,8 @@ public class SendRemindersJob : IJob
     public async Task Execute(IJobExecutionContext context)
     {
         //_logger.LogInformation("Sending reminders...");
-
+        // TODO: Make this cleaner. I don't need to copy-paste all of this code for recurring vs one time reminders
+        // Send recurring reminders
         var scheduledTime = context.ScheduledFireTimeUtc!.Value.UtcDateTime;
         var dueReminders = _db.Reminders.Include(x => x.ReminderType).Where(x =>
             x.NextRun != null && x.NextRun <= scheduledTime).AsEnumerable();
@@ -55,6 +56,34 @@ public class SendRemindersJob : IJob
             {
                 reminder.NextRun = scheduledTime.AddMinutes(reminder.ReminderMinutes);
             }
+        }
+        
+        var dueOneTimeReminders = _db.OneTimeReminders.Where(x =>
+            x.NextRun != null && x.NextRun <= scheduledTime).AsEnumerable();
+
+        foreach (var reminder in dueOneTimeReminders)
+        {
+            var user = await _userManager.FindByIdAsync(reminder.UserId);
+            if (user == null)
+            {
+                _logger.LogError("User not found for reminder ID {Id}", reminder.Id);
+                continue;
+            }
+            
+            _logger.LogInformation("Sending reminder to user {User} for reminder {Reminder}", user.Id, reminder.Id);
+
+            await _bot.SendReminderToUser(user.TelegramUserId, false, reminder.ToString(), reminder.Id, reminder.Nonce ?? 0);
+
+            _db.OneTimeReminders.Remove(reminder);
+            // if (reminder.ReminderMinutes <= 0)
+            // {
+            //     reminder.LastRun = scheduledTime;
+            //     reminder.NextRun = await _reminderService.CalculateNextRunTime(reminder);
+            // }
+            // else
+            // {
+            //     reminder.NextRun = scheduledTime.AddMinutes(reminder.ReminderMinutes);
+            // }
         }
 
         await _db.SaveChangesAsync();

@@ -1,11 +1,14 @@
 using System.Text.RegularExpressions;
 using Bot;
+using Chronic.Core;
+using Chronic.Core.Tags;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using TimeZoneConverter;
 using Tracker.Data;
 using Tracker.Models;
 
@@ -22,6 +25,20 @@ public class TelegramUpdateHandler : IUpdateHandler
     private readonly IWebHostEnvironment _environment;
     private readonly PersistentConfigRepository _configRepo;
     private readonly ReminderService _reminderService;
+
+    // We can only ever have one instance of the app listening to updates, so this should be safe
+    private static Dictionary<long, ReminderBuilder> _reminderBuilders = new();
+
+    private class ReminderBuilder
+    {
+        public ReminderBuilderState State = ReminderBuilderState.AwaitingName;
+        public string? Name;
+        public enum ReminderBuilderState
+        {
+            AwaitingName,
+            AwaitingTime
+        }
+    }
 
     public TelegramUpdateHandler(ILogger<TelegramUpdateHandler> logger, TelegramBotService botService,
         TelegramBotClient botClient, ApplicationDbContext db, UserManager<ApplicationUser> userManager,
@@ -61,14 +78,18 @@ public class TelegramUpdateHandler : IUpdateHandler
 
     private async Task OnMessageReceived(Message message, CancellationToken cancellationToken)
     {
-        if (message.Text is not { } messageText)
+        if (message.Text is not { })
             return;
 
-        if (message.Text.StartsWith("/login"))
-            await HandleLoginCommand(message);
-        else if (message.Text.StartsWith("/start")) await HandleStartCommand(message);
+        var chatId = message.Chat.Id;
 
-        async Task HandleStartCommand(Message message)
+        if (message.Text.StartsWith("/login")) await HandleLoginCommand();
+        else if (message.Text.StartsWith("/start")) await HandleStartCommand();
+        else if (message.Text.StartsWith("/remind")) await HandleRemindCommand();
+        else if (message.Text.StartsWith("/cancel")) await HandleCancelCommand();
+        else await HandleStatefulMessage();
+
+        async Task HandleStartCommand()
         {
             var chatId = message.Chat.Id;
             var existingUser = _db.Users.SingleOrDefault(x => x.TelegramUserId == chatId);
@@ -102,7 +123,7 @@ public class TelegramUpdateHandler : IUpdateHandler
             }
         }
 
-        async Task HandleLoginCommand(Message message)
+        async Task HandleLoginCommand()
         {
             var chatId = message.Chat.Id;
 
@@ -135,6 +156,97 @@ public class TelegramUpdateHandler : IUpdateHandler
                     }), cancellationToken: cancellationToken);
 
             await _botClient.DeleteMessageAsync(chatId, message.MessageId, cancellationToken);
+        }
+
+        async Task HandleRemindCommand()
+        {
+            if (_reminderBuilders.ContainsKey(chatId))
+            {
+                await _botClient.SendTextMessageAsync(chatId,
+                    "You're already creating a reminder. Send `/cancel` first or finish what you were doing.",
+                    cancellationToken: cancellationToken);
+                return;
+            }
+
+            _reminderBuilders[chatId] = new ReminderBuilder();
+            await _botClient.SendTextMessageAsync(chatId,
+                "Ok, what should the name of the reminder be?",
+                cancellationToken: cancellationToken);
+        }
+
+        async Task HandleStatefulMessage()
+        {
+            if (!_reminderBuilders.ContainsKey(chatId))
+            {
+                await _botClient.SendTextMessageAsync(chatId, "I'm not sure what you mean",
+                    cancellationToken: cancellationToken);
+                return;
+            }
+
+            var reminderBuilder = _reminderBuilders[chatId];
+            if (reminderBuilder.State == ReminderBuilder.ReminderBuilderState.AwaitingName)
+            {
+                reminderBuilder.Name = message.Text;
+                reminderBuilder.State = ReminderBuilder.ReminderBuilderState.AwaitingTime;
+                await _botClient.SendTextMessageAsync(message.Chat.Id,
+                    "When should you be reminded?", cancellationToken: cancellationToken);
+            } else if (reminderBuilder.State == ReminderBuilder.ReminderBuilderState.AwaitingTime)
+            {
+                var user = await _db.Users.SingleAsync(x => x.TelegramUserId == chatId,
+                    cancellationToken: cancellationToken);
+                var userTimeZone = TZConvert.GetTimeZoneInfo(user.TimeZoneId);
+                
+                var textDate = message.Text;
+                var parser = new Parser(new Options()
+                {
+                    Context = Pointer.Type.Future,
+                    Clock = () => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTimeZone)
+                });
+                var parsedDate = parser.Parse(textDate).Start;
+                if (parsedDate is null)
+                {
+                    await _botClient.SendTextMessageAsync(message.Chat.Id,
+                        $"Failed to parse date '{textDate}'", cancellationToken: cancellationToken);
+                    return;
+                }
+
+                var utcReminderTime = TimeZoneInfo.ConvertTimeToUtc(parsedDate.Value, userTimeZone);
+
+                _db.OneTimeReminders.Add(new OneTimeReminder()
+                {
+                    Name = reminderBuilder.Name!,
+                    NextRun = utcReminderTime,
+                    UserId = user.Id
+                });
+
+                await _db.SaveChangesAsync(cancellationToken);
+                
+                await _botClient.SendTextMessageAsync(message.Chat.Id,
+                    $"Reminder saved", cancellationToken: cancellationToken);
+
+                _reminderBuilders.Remove(chatId);
+            }
+            else
+            {
+                // Should never happen
+                throw new ArgumentOutOfRangeException(nameof(reminderBuilder),
+                    $"ReminderBuilder State {reminderBuilder.State} not implemented");
+            }
+        }
+
+        async Task HandleCancelCommand()
+        {
+            if (_reminderBuilders.ContainsKey(chatId))
+            {
+                _reminderBuilders.Remove(chatId);
+                await _botClient.SendTextMessageAsync(chatId, "Reminder creation cancelled",
+                    cancellationToken: cancellationToken);
+            }
+            else
+            {
+                await _botClient.SendTextMessageAsync(chatId, "No operation to cancel",
+                    cancellationToken: cancellationToken);
+            }
         }
     }
 
