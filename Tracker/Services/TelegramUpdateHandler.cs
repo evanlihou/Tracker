@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using TimeZoneConverter;
 using Tracker.Data;
@@ -176,7 +177,7 @@ public class TelegramUpdateHandler : IUpdateHandler
 
         async Task HandleStatefulMessage()
         {
-            if (!_reminderBuilders.ContainsKey(chatId))
+            if (message.Chat.Type == ChatType.Private && !_reminderBuilders.ContainsKey(chatId))
             {
                 await _botClient.SendTextMessageAsync(chatId, "I'm not sure what you mean",
                     cancellationToken: cancellationToken);
