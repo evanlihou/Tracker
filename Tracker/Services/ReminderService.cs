@@ -59,7 +59,8 @@ public class ReminderService
         }
 
         reminder.Nonce = _rng.Next();
-
+        reminder.IsPendingCompletion = false;
+        
         _logger.LogInformation("Marked completion for reminder {Id}", reminderId);
         
         await _db.SaveChangesAsync(cancellationToken);
