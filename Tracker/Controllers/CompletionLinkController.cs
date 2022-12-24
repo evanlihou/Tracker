@@ -72,17 +72,17 @@ public class CompletionLinkController : BaseController
         }
         if (!ModelState.IsValid) return View(model);
 
-        var dbType = await Db.CompletionLinks.Include(x => x.Reminders).SingleOrDefaultAsync(x => x.Id == id && x.UserId == UserId);
+        var dbType = await Db.CompletionLinks.Include(x => x.Reminders)
+            .SingleOrDefaultAsync(x => x.Id == id && x.UserId == UserId);
         if (dbType == null) return NotFound();
 
         dbType.Name = model.Name;
 
-        dbType.Reminders.RemoveAll(x => true);
+        dbType.Reminders!.RemoveAll(x => true);
         foreach (var reminderId in selectedReminders.Keys)
         {
-            dbType.Reminders.Add(await Db.Reminders.FindAsync(reminderId)!);
+            dbType.Reminders.Add((await Db.Reminders.FindAsync(reminderId))!);
         }
-        //dbType.Reminders = selectedReminders.Select(selected => Db.Reminders.Find(selected.Key)).ToList();
 
         await Db.SaveChangesAsync();
 
