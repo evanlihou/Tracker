@@ -13,5 +13,5 @@ public class CompletionLink : BaseModel
     
     [Required] public Guid Guid { get; set; }
     
-    public ICollection<Reminder>? Reminders { get; set; }
+    public List<Reminder>? Reminders { get; set; }
 }

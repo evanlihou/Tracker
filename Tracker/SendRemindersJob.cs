@@ -47,6 +47,7 @@ public class SendRemindersJob : IJob
 
             await _bot.SendReminderToUser(user.TelegramUserId, reminder.IsActionable, $"Reminder: {reminder.ReminderType!.Name} - {reminder.Name}", reminder.Id, reminder.Nonce ?? 0);
 
+            reminder.IsPendingCompletion = true;
             if (reminder.ReminderMinutes <= 0)
             {
                 reminder.LastRun = scheduledTime;
