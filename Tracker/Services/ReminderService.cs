@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Quartz;
+using Telegram.Bot;
 using Tracker.Data;
 using Tracker.Models;
 
@@ -11,12 +12,14 @@ public class ReminderService
     private readonly ILogger<ReminderService> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly Random _rng;
+    private readonly TelegramBotClient _botClient;
 
-    public ReminderService(ApplicationDbContext db, ILogger<ReminderService> logger, UserManager<ApplicationUser> userManager)
+    public ReminderService(ApplicationDbContext db, ILogger<ReminderService> logger, UserManager<ApplicationUser> userManager, TelegramBotClient botClient)
     {
         _db = db;
         _logger = logger;
         _userManager = userManager;
+        _botClient = botClient;
         _rng = new Random();
     }
     
@@ -29,6 +32,8 @@ public class ReminderService
             _logger.LogError("Unable to find reminder {ReminderId}", reminderId);
             return false;
         }
+
+        var user = await _db.Users.FindAsync(reminder.UserId, cancellationToken);
 
         // If nonces don't match and it's not the expected null value of 0
         if (nonce is null || (reminder.Nonce != nonce && !(reminder.Nonce == null && nonce == 0)))
@@ -61,10 +66,27 @@ public class ReminderService
         reminder.Nonce = _rng.Next();
         reminder.IsPendingCompletion = false;
         
+        try
+        {
+            var reminderMessages = _db.ReminderMessages.Where(x => x.ReminderId == reminder.Id);
+
+            List<Task> deletedMessageTasks = new();
+            foreach (var message in reminderMessages)
+                deletedMessageTasks.Add(_botClient.DeleteMessageAsync(user.TelegramUserId!, message.MessageId,
+                    cancellationToken));
+
+            if (deletedMessageTasks.Any()) await Task.WhenAll(deletedMessageTasks);
+
+            _db.ReminderMessages.RemoveRange(reminderMessages);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete message(s)");
+        }
         _logger.LogInformation("Marked completion for reminder {Id}", reminderId);
         
         await _db.SaveChangesAsync(cancellationToken);
-
+        
         return true;
     }
     
