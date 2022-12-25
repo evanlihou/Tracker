@@ -18,7 +18,10 @@ public class Reminder : BaseReminder
     public ReminderType? ReminderType { get; set; }
 
     public bool IsActionable { get; set; } = true;
-    
+    public bool IsPendingCompletion { get; set; }
+
+    public List<CompletionLink> CompletionLinks { get; set; } = new List<CompletionLink>();
+
     public override string ToString()
     {
         return $"Reminder: {ReminderType?.Name ?? "Uncategorized"} - {Name}";

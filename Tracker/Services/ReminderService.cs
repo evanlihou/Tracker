@@ -31,7 +31,7 @@ public class ReminderService
         }
 
         // If nonces don't match and it's not the expected null value of 0
-        if (reminder.Nonce != nonce && !(reminder.Nonce == null && nonce == 0))
+        if (nonce is null || (reminder.Nonce != nonce && !(reminder.Nonce == null && nonce == 0)))
         {
             _logger.LogWarning("Provided nonce {Provided} does not match expected {Expected}", nonce, reminder.Nonce);
             return false;
@@ -59,7 +59,8 @@ public class ReminderService
         }
 
         reminder.Nonce = _rng.Next();
-
+        reminder.IsPendingCompletion = false;
+        
         _logger.LogInformation("Marked completion for reminder {Id}", reminderId);
         
         await _db.SaveChangesAsync(cancellationToken);

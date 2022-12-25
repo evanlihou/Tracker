@@ -109,13 +109,13 @@ public class ReminderController : BaseController
     public async Task<ActionResult> Edit(int reminderId, [FromForm] Reminder model)
     {
         ModelState.Remove("ReminderType");
+        ModelState.Remove("CompletionLinks");
         ModelState.Remove("UserId");
         if (!ModelState.IsValid) return View(model);
 
         var dbReminder = await Db.Reminders.SingleOrDefaultAsync(x => x.Id == reminderId && x.UserId == UserId);
         if (dbReminder == null) return BadRequest();
         
-
         var userTimeZone = await GetUserTimeZone();
         
         dbReminder.Name = model.Name;

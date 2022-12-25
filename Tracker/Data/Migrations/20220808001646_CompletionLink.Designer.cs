@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tracker.Data;
 
@@ -10,9 +11,10 @@ using Tracker.Data;
 namespace Tracker.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220808001646_CompletionLink")]
+    partial class CompletionLink
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "6.0.2");
@@ -276,38 +278,6 @@ namespace Tracker.Data.Migrations
                     b.ToTable("CompletionLinks");
                 });
 
-            modelBuilder.Entity("Tracker.Models.OneTimeReminder", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("LastRun")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("NextRun")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("Nonce")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ReminderMinutes")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("OneTimeReminders");
-                });
-
             modelBuilder.Entity("Tracker.Models.PersistentConfig", b =>
                 {
                     b.Property<int>("Id")
@@ -344,9 +314,6 @@ namespace Tracker.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsActionable")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsPendingCompletion")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("LastRun")

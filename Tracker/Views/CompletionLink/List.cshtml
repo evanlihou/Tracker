@@ -1,0 +1,31 @@
+@model IEnumerable<Tracker.Models.CompletionLink>
+
+@{
+  ViewBag.Title = "Completion Links";
+  Layout = "_Layout";
+}
+
+<h2>Completion Links</h2>
+<p>
+  <a asp-action="Create">Create</a>
+</p>
+<table class="table">
+  <thead>
+  <tr>
+    <th>Name</th>
+    <th>Actions</th>
+  </tr>
+  </thead>
+  <tbody>
+    @foreach (var link in Model!)
+    {
+      <tr>
+        <td>@link.Name</td>
+        <td>
+          <a asp-action="Edit" asp-route-id="@link.Id">Edit</a>
+          @* <a asp-action="Delete" asp-route-linkId="@link.Id">Delete</a> *@
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

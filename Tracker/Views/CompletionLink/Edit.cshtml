@@ -1,0 +1,41 @@
+@model Tracker.Models.CompletionLink
+@inject IConfiguration Configuration
+
+@{
+  ViewBag.Title = $"Edit {Model?.Name ?? "Reminder Type"}";
+  Layout = "_Layout";
+  var completionUri = new Uri(new Uri(Configuration["BaseUrl"]), Url.Action("Complete", new { linkGuid = Model.Guid }));
+}
+
+<h2>@ViewBag.Title</h2>
+
+@if (Model == null)
+{
+  <div class="alert alert-danger" role="alert">
+    Completion link not found. <a asp-action="List">Return to list.</a>
+  </div>
+  return;
+}
+
+<form asp-action="Edit" method="post">
+  <partial name="_CreateOrEditForm" model="Model" />
+</form>
+
+<h3>Completion URL</h3>
+<p>Visit this URL to mark the selected reminders as complete.</p>
+<div class="input-group mb-3">
+  <input type="text" class="form-control" value="@completionUri">
+  <div class="input-group-append">
+    <button class="btn btn-outline-secondary" type="button" onclick="copyInput(this)">Copy</button>
+  </div>
+</div>
+
+@section Scripts {
+  <script>
+    function copyInput(el) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(el.closest('.input-group').querySelector('input').value);
+      }
+    }
+  </script>
+}
