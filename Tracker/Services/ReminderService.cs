@@ -33,7 +33,7 @@ public class ReminderService
             return false;
         }
 
-        var user = await _db.Users.FindAsync(reminder.UserId, cancellationToken);
+        var user = await _db.Users.FindAsync(new object?[] { reminder.UserId }, cancellationToken);
 
         // If nonces don't match and it's not the expected null value of 0
         if (nonce is null || (reminder.Nonce != nonce && !(reminder.Nonce == null && nonce == 0)))
