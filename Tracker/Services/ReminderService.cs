@@ -36,7 +36,7 @@ public class ReminderService
         var user = await _db.Users.FindAsync(new object?[] { reminder.UserId }, cancellationToken);
 
         // If nonces don't match and it's not the expected null value of 0
-        if (nonce is null || (reminder.Nonce != nonce && !(reminder.Nonce == null && nonce == 0)))
+        if (nonce is not null && (reminder.Nonce != nonce && !(reminder.Nonce == null && nonce == 0)))
         {
             _logger.LogWarning("Provided nonce {Provided} does not match expected {Expected}", nonce, reminder.Nonce);
             return false;
