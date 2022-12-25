@@ -30,7 +30,7 @@ public class CompletionLinkController : BaseController
     }
 
     [HttpPost("create")]
-    public async Task<ActionResult> Create([FromForm] CompletionLink model)
+    public async Task<ActionResult> Create([FromForm] Dictionary<int, object> selectedReminders, [FromForm] CompletionLink model)
     {
         await PopulateReminders();
         ModelState.Remove("UserId");
@@ -40,9 +40,14 @@ public class CompletionLinkController : BaseController
         {
             UserId = UserId,
             Name = model.Name,
-            Reminders = model.Reminders,
+            Reminders = new List<Reminder>(),
             Guid = Guid.NewGuid()
         };
+        
+        foreach (var reminderId in selectedReminders.Keys)
+        {
+            dbType.Reminders.Add((await Db.Reminders.FindAsync(reminderId))!);
+        }
         
         Db.CompletionLinks.Add(dbType);
 
