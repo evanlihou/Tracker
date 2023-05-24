@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-      <UserSecretsId>2cc1ad43-19e8-48f7-9947-b26e637cd0c0</UserSecretsId>
+        <UserSecretsId>2cc1ad43-19e8-48f7-9947-b26e637cd0c0</UserSecretsId>
+        <NoWarn>8981</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

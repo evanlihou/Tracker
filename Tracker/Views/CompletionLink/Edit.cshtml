@@ -4,7 +4,7 @@
 @{
   ViewBag.Title = $"Edit {Model?.Name ?? "Reminder Type"}";
   Layout = "_Layout";
-  var completionUri = new Uri(new Uri(Configuration["BaseUrl"]), Url.Action("Complete", new { linkGuid = Model.Guid }));
+  var completionUri = new Uri(new Uri(Configuration["BaseUrl"] ?? ""), Url.Action("Complete", new { linkGuid = Model?.Guid }));
 }
 
 <h2>@ViewBag.Title</h2>

@@ -15,7 +15,7 @@ public class BaseController : Controller
 
     protected ApplicationDbContext Db => _db ??= HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
 
-    protected string UserId => UserManager.GetUserId(User);
+    protected string? UserId => UserManager.GetUserId(User);
 
-    protected async Task<TimeZoneInfo> GetUserTimeZone() => TZConvert.GetTimeZoneInfo((await UserManager.GetUserAsync(User)).TimeZoneId);
+    protected async Task<TimeZoneInfo?> GetUserTimeZone() => TZConvert.GetTimeZoneInfo((await UserManager.GetUserAsync(User))?.TimeZoneId);
 }

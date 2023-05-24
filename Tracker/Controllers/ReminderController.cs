@@ -26,7 +26,7 @@ public class ReminderController : BaseController
         return View(new ReminderListViewModel
         {
             Reminders = reminders,
-            UserTimeZone = await GetUserTimeZone()
+            UserTimeZone = (await GetUserTimeZone())!
         });
     }
 
@@ -50,11 +50,11 @@ public class ReminderController : BaseController
         ModelState.Remove("UserId");
         if (!ModelState.IsValid) return View(model);
         
-        var userTimeZone = await GetUserTimeZone();
+        var userTimeZone = (await GetUserTimeZone())!;
         
         var dbReminder = new Reminder
         {
-            UserId = UserId,
+            UserId = UserId!,
             Name = model.Name,
             CronLocal = model.CronLocal
         };
@@ -86,7 +86,7 @@ public class ReminderController : BaseController
     [HttpGet("{reminderId:int}")]
     public async Task<ActionResult> Edit(int reminderId)
     {
-        var userTimeZone = await GetUserTimeZone();
+        var userTimeZone = (await GetUserTimeZone())!;
         var reminder = await Db.Reminders.Include(x => x.ReminderType).SingleOrDefaultAsync(x => x.Id == reminderId);
 
         if (reminder == null)
@@ -116,7 +116,7 @@ public class ReminderController : BaseController
         var dbReminder = await Db.Reminders.SingleOrDefaultAsync(x => x.Id == reminderId && x.UserId == UserId);
         if (dbReminder == null) return BadRequest();
         
-        var userTimeZone = await GetUserTimeZone();
+        var userTimeZone = (await GetUserTimeZone())!;
         
         dbReminder.Name = model.Name;
         dbReminder.CronLocal = model.CronLocal;

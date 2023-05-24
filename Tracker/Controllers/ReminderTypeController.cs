@@ -33,7 +33,7 @@ public class ReminderTypeController : BaseController
         
         var dbType = new ReminderType()
         {
-            UserId = UserId,
+            UserId = UserId!,
             Name = model.Name
         };
         

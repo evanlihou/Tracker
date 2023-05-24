@@ -38,7 +38,7 @@ public class CompletionLinkController : BaseController
         
         var dbType = new CompletionLink()
         {
-            UserId = UserId,
+            UserId = UserId!,
             Name = model.Name,
             Reminders = new List<Reminder>(),
             Guid = Guid.NewGuid()

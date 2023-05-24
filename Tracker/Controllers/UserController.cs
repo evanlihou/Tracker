@@ -48,6 +48,8 @@ public class UserController : BaseController
         
         var user = await UserManager.GetUserAsync(User);
 
+        if (user is null) return NotFound();
+
         if (model.TimeZone != null && timeZoneInfo != null)
         {
             user.TimeZoneId = timeZoneInfo.Id;
@@ -61,6 +63,9 @@ public class UserController : BaseController
     public async Task<ActionResult> ConnectTelegram(long telegramUserId)
     {
         var user = await UserManager.GetUserAsync(User);
+
+        if (user is null) return NotFound();
+        
         if (user.TelegramUserId != null) return BadRequest();
 
         user.TelegramUserId = telegramUserId;

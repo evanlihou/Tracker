@@ -72,7 +72,7 @@ public class ReminderService
 
             List<Task> deletedMessageTasks = new();
             foreach (var message in reminderMessages)
-                deletedMessageTasks.Add(_botClient.DeleteMessageAsync(user.TelegramUserId!, message.MessageId,
+                deletedMessageTasks.Add(_botClient.DeleteMessageAsync(user!.TelegramUserId!, message.MessageId,
                     cancellationToken));
 
             if (deletedMessageTasks.Any()) await Task.WhenAll(deletedMessageTasks);
@@ -99,7 +99,7 @@ public class ReminderService
         var cronExpression = reminder.CronLocal != null
             ? new CronExpression(reminder.CronLocal)
             {
-                TimeZone = user.TimeZone
+                TimeZone = user!.TimeZone
             }
             : null;
 

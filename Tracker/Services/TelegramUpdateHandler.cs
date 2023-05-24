@@ -293,6 +293,12 @@ public class TelegramUpdateHandler : IUpdateHandler
 
         var user = await _userManager.FindByIdAsync(reminder.UserId);
 
+        if (user is null)
+        {
+            _logger.LogWarning("Could not find user for reminder {Id}", reminder.Id);
+            return;
+        }
+
         if (user.TelegramUserId != callbackQuery.Message?.Chat.Id)
             _logger.LogWarning("Got a callback from the wrong chat. Expected {Expected} got {Actual}",
                 user.TelegramUserId, callbackQuery.Message?.Chat.Id);

@@ -15,6 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new ArgumentNullException(nameof(connectionString), "SQLite connection string is required");
+}
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -54,16 +58,21 @@ if (!string.IsNullOrEmpty(builder.Configuration["Telegram:AccessToken"]))
             .StartNow().WithDailyTimeIntervalSchedule(s => s.WithIntervalInSeconds(30))
         );
     });
-    
-    builder.Services.AddSingleton(x => new TelegramSettings
+
+    if (!string.IsNullOrEmpty(builder.Configuration["Telegram:AccessToken"]) &&
+        !string.IsNullOrEmpty(builder.Configuration["BaseUrl"]))
     {
-        AccessToken = builder.Configuration["Telegram:AccessToken"],
-        BaseUrl = builder.Configuration["BaseUrl"]
-    });
-    builder.Services.AddSingleton(x => new TelegramBotClient(builder.Configuration["Telegram:AccessToken"]));
-    builder.Services.AddScoped<TelegramBotService>();
-    builder.Services.AddHostedService<TelegramPollingService>();
-    builder.Services.AddScoped<IUpdateHandler, TelegramUpdateHandler>();
+        builder.Services.AddSingleton(x => new TelegramSettings
+        {
+            AccessToken = builder.Configuration["Telegram:AccessToken"]!,
+            BaseUrl = builder.Configuration["BaseUrl"]!
+        });
+        builder.Services.AddSingleton(x => new TelegramBotClient(builder.Configuration["Telegram:AccessToken"]!));
+        builder.Services.AddScoped<TelegramBotService>();
+        builder.Services.AddHostedService<TelegramPollingService>();
+        builder.Services.AddScoped<IUpdateHandler, TelegramUpdateHandler>();
+
+    }
 }
 
 builder.Services.AddScoped<ReminderService>();
