@@ -63,7 +63,7 @@ public class ReminderService
             reminder.NextRun = nextRun; 
         }
 
-        reminder.Nonce = _rng.Next();
+        reminder.Nonce = _rng.Next(int.MaxValue);
         reminder.IsPendingCompletion = false;
         
         try
