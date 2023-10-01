@@ -14,13 +14,29 @@ using Tracker.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+var dbProvider = builder.Configuration["DbProvider"];
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (string.IsNullOrEmpty(connectionString))
+if (string.IsNullOrEmpty(dbProvider) || string.IsNullOrEmpty(connectionString))
 {
-    throw new ArgumentNullException(nameof(connectionString), "SQLite connection string is required");
+    throw new ArgumentNullException(nameof(connectionString), "DB connection info is required");
 }
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+
+switch (dbProvider)
+{
+    case "MySQL":
+        builder.Services.AddDbContext<ApplicationDbContext, MysqlApplicationDbContext>(options =>
+        {
+            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        }, ServiceLifetime.Transient);
+        break;
+    case "SQLite":
+        builder.Services.AddDbContext<ApplicationDbContext, SqliteApplicationDbContext>(options =>
+            options.UseSqlite(connectionString));
+        break;
+    default:
+        throw new ApplicationException($"Unknown DB Provider {dbProvider}");
+}
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>();
@@ -50,7 +66,6 @@ if (!string.IsNullOrEmpty(builder.Configuration["Telegram:AccessToken"]))
     builder.Services.AddQuartz(q =>
     {
         q.SchedulerId = "reminder-scheduler";
-        q.UseMicrosoftDependencyInjectionJobFactory();
 
         q.ScheduleJob<SendRemindersJob>(trigger => trigger
             .WithIdentity("Send Reminders Job")

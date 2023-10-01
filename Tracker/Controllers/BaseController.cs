@@ -17,5 +17,6 @@ public class BaseController : Controller
 
     protected string? UserId => UserManager.GetUserId(User);
 
-    protected async Task<TimeZoneInfo?> GetUserTimeZone() => TZConvert.GetTimeZoneInfo((await UserManager.GetUserAsync(User))?.TimeZoneId);
+    protected async Task<TimeZoneInfo?> GetUserTimeZone() =>
+        TZConvert.GetTimeZoneInfo((await UserManager.GetUserAsync(User))?.TimeZoneId ?? "Etc/UTC");
 }

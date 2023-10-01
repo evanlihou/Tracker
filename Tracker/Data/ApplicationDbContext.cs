@@ -8,7 +8,7 @@ namespace Tracker.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionKeyContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt) : base(opt)
+    public ApplicationDbContext(DbContextOptions opt) : base(opt)
     {
         
     }
