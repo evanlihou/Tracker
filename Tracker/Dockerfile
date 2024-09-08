@@ -5,12 +5,6 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash - \
-    && apt-get install -y \
-        nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /src
 COPY ["Tracker.csproj", "Tracker/"]
 RUN dotnet restore "Tracker/Tracker.csproj"
