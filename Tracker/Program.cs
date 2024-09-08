@@ -26,7 +26,7 @@ switch (dbProvider)
         builder.Services.AddDbContext<ApplicationDbContext, MysqlApplicationDbContext>(options =>
         {
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-        });
+        }, ServiceLifetime.Transient);
         break;
     case "SQLite":
         builder.Services.AddDbContext<ApplicationDbContext, SqliteApplicationDbContext>(options =>
