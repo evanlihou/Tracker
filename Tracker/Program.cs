@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Bot;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +26,7 @@ switch (dbProvider)
         builder.Services.AddDbContext<ApplicationDbContext, MysqlApplicationDbContext>(options =>
         {
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-        }, ServiceLifetime.Transient);
+        });
         break;
     case "SQLite":
         builder.Services.AddDbContext<ApplicationDbContext, SqliteApplicationDbContext>(options =>
@@ -70,7 +69,8 @@ if (!string.IsNullOrEmpty(builder.Configuration["Telegram:AccessToken"]))
         q.ScheduleJob<SendRemindersJob>(trigger => trigger
             .WithIdentity("Send Reminders Job")
             .WithDescription("Get reminders that are past due for sending and send them out")
-            .StartNow().WithDailyTimeIntervalSchedule(s => s.WithIntervalInSeconds(30))
+            .StartAt(DateBuilder.EvenMinuteDateBefore(null))
+            .WithSimpleSchedule(x => x.WithIntervalInSeconds(30).RepeatForever())
         );
     });
 

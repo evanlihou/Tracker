@@ -3,18 +3,12 @@ using Tracker.Models;
 
 namespace Tracker.Data
 {
-    public class PersistentConfigRepository
+    public class PersistentConfigRepository(ApplicationDbContext dbContext)
     {
-        private readonly ApplicationDbContext _db;
-
-        public PersistentConfigRepository(ApplicationDbContext dbContext)
-        {
-            _db = dbContext;
-        }
-        
         public async Task<PersistentConfig?> GetByCodeOrNull(string configCode, CancellationToken cancellationToken = default)
         {
-            return await _db.PersistentConfigs.SingleOrDefaultAsync(x => x.ConfigCode == configCode, cancellationToken);
+            return await dbContext.PersistentConfigs.SingleOrDefaultAsync(x => x.ConfigCode == configCode,
+                cancellationToken);
         }
 
         public async Task<PersistentConfig> UpdateByCode(string configCode, string value, CancellationToken cancellationToken = default)
@@ -27,14 +21,14 @@ namespace Tracker.Data
                     ConfigCode = configCode,
                     Value = value
                 };
-                _db.PersistentConfigs.Add(config);
+                dbContext.PersistentConfigs.Add(config);
             }
             else
             {
                 config.Value = value;
-                _db.PersistentConfigs.Update(config);   
+                dbContext.PersistentConfigs.Update(config);   
             }
-            await _db.SaveChangesAsync(cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
 
             return config;
         }

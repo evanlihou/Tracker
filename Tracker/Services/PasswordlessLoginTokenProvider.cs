@@ -1,19 +1,17 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using Tracker.Models;
 
 namespace Tracker.Services;
 
-public class PasswordlessLoginTokenProvider<TUser> : DataProtectorTokenProvider<TUser> 
-    where TUser : class
-{
-    public PasswordlessLoginTokenProvider(IDataProtectionProvider dataProtectionProvider, IOptions<PasswordlessLoginTokenProviderOptions> options, ILogger<PasswordlessLoginTokenProvider<TUser>> logger) : base(dataProtectionProvider, options, logger)
-    {
-    }
-}
+public class PasswordlessLoginTokenProvider<TUser>(
+    IDataProtectionProvider dataProtectionProvider,
+    IOptions<PasswordlessLoginTokenProviderOptions> options,
+    ILogger<PasswordlessLoginTokenProvider<TUser>> logger)
+    : DataProtectorTokenProvider<TUser>(dataProtectionProvider, options, logger)
+    where TUser : class;
 
-public class PasswordlessLoginTokenProvider
+public static class PasswordlessLoginTokenProvider
 {
     public const string Name = "PasswordlessLoginTokenProvider";
 }

@@ -43,6 +43,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
                 continue;
             }
 
+            // TODO: I think this got easier to do since I wrote this monstrosity
             foreach (var property in entityType.GetProperties())
             {
                 if (property.ClrType == typeof(DateTime))

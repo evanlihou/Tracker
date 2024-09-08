@@ -6,39 +6,30 @@ using Tracker.Models;
 
 namespace Tracker.Services;
 
-public class ReminderService
+public class ReminderService(
+    ApplicationDbContext db,
+    ILogger<ReminderService> logger,
+    UserManager<ApplicationUser> userManager,
+    TelegramBotClient botClient)
 {
-    private readonly ApplicationDbContext _db;
-    private readonly ILogger<ReminderService> _logger;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly Random _rng;
-    private readonly TelegramBotClient _botClient;
+    private readonly Random _rng = new();
 
-    public ReminderService(ApplicationDbContext db, ILogger<ReminderService> logger, UserManager<ApplicationUser> userManager, TelegramBotClient botClient)
-    {
-        _db = db;
-        _logger = logger;
-        _userManager = userManager;
-        _botClient = botClient;
-        _rng = new Random();
-    }
-    
     public async Task<bool> MarkCompleted(int reminderId, int? nonce, bool isSkip, DateTime completionTime = default, CancellationToken cancellationToken = default)
     {
-        var reminder = await _db.Reminders.FindAsync(new object?[] { reminderId }, cancellationToken: cancellationToken);
+        var reminder = await db.Reminders.FindAsync(new object?[] { reminderId }, cancellationToken: cancellationToken);
 
         if (reminder == null)
         {
-            _logger.LogError("Unable to find reminder {ReminderId}", reminderId);
+            logger.LogError("Unable to find reminder {ReminderId}", reminderId);
             return false;
         }
 
-        var user = await _db.Users.FindAsync(new object?[] { reminder.UserId }, cancellationToken);
+        var user = await db.Users.FindAsync(new object?[] { reminder.UserId }, cancellationToken);
 
         // If nonces don't match and it's not the expected null value of 0
         if (nonce is not null && (reminder.Nonce != nonce && !(reminder.Nonce == null && nonce == 0)))
         {
-            _logger.LogWarning("Provided nonce {Provided} does not match expected {Expected}", nonce, reminder.Nonce);
+            logger.LogWarning("Provided nonce {Provided} does not match expected {Expected}", nonce, reminder.Nonce);
             return false;
         }
         
@@ -48,7 +39,7 @@ public class ReminderService
         
         if (!isSkip)
         {
-            await _db.ReminderCompletions.AddAsync(new ReminderCompletion
+            await db.ReminderCompletions.AddAsync(new ReminderCompletion
             {
                 ReminderId = reminderId,
                 CompletionTime = completionTime
@@ -68,24 +59,24 @@ public class ReminderService
         
         try
         {
-            var reminderMessages = _db.ReminderMessages.Where(x => x.ReminderId == reminder.Id);
+            var reminderMessages = db.ReminderMessages.Where(x => x.ReminderId == reminder.Id);
 
             List<Task> deletedMessageTasks = new();
             foreach (var message in reminderMessages)
-                deletedMessageTasks.Add(_botClient.DeleteMessageAsync(user!.TelegramUserId!, message.MessageId,
+                deletedMessageTasks.Add(botClient.DeleteMessageAsync(user!.TelegramUserId!, message.MessageId,
                     cancellationToken));
 
             if (deletedMessageTasks.Any()) await Task.WhenAll(deletedMessageTasks);
 
-            _db.ReminderMessages.RemoveRange(reminderMessages);
+            db.ReminderMessages.RemoveRange(reminderMessages);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to delete message(s)");
+            logger.LogWarning(ex, "Failed to delete message(s)");
         }
-        _logger.LogInformation("Marked completion for reminder {Id}", reminderId);
+        logger.LogInformation("Marked completion for reminder {Id}", reminderId);
         
-        await _db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         
         return true;
     }
@@ -94,7 +85,7 @@ public class ReminderService
     {
         if (referenceTime == default) referenceTime = DateTime.UtcNow;
 
-        var user = await _userManager.FindByIdAsync(reminder.UserId);
+        var user = await userManager.FindByIdAsync(reminder.UserId);
 
         var cronExpression = reminder.CronLocal != null
             ? new CronExpression(reminder.CronLocal)

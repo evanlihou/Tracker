@@ -4,7 +4,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using Tracker.Data;
 using Tracker.Models;
 
-namespace Bot;
+namespace Tracker.Services;
 
 public class TelegramSettings
 {
