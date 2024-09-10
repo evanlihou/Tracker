@@ -8,15 +8,21 @@ using Tracker.Services;
 namespace Tracker;
 
 public class SendRemindersJob(
-    ILogger<SendRemindersJob> logger,
-    ApplicationDbContext db,
-    UserManager<ApplicationUser> userManager,
-    TelegramBotService bot,
-    ReminderService reminderService)
+    IServiceProvider services)
     : IJob
 {
     public async Task Execute(IJobExecutionContext context)
     {
+        // Get services as a scope so they're not sticking around forever
+        // TODO: Consider whether some of these would be better sticking around, but it shouldn't harm anything to make
+        // them all scoped to one execution.
+        using var scope = services.CreateScope();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<SendRemindersJob>>();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var bot = scope.ServiceProvider.GetRequiredService<TelegramBotService>();
+        var reminderService = scope.ServiceProvider.GetRequiredService<ReminderService>();
+        
         //_logger.LogInformation("Sending reminders...");
         // TODO: Make this cleaner. I don't need to copy-paste all of this code for recurring vs one time reminders
         // Send recurring reminders
