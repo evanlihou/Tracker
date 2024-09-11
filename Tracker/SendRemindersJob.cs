@@ -27,8 +27,8 @@ public class SendRemindersJob(
         // TODO: Make this cleaner. I don't need to copy-paste all of this code for recurring vs one time reminders
         // Send recurring reminders
         var scheduledTime = context.ScheduledFireTimeUtc!.Value.UtcDateTime;
-        var dueReminders = db.Reminders.Include(x => x.ReminderType).Where(x =>
-            x.NextRun != null && x.NextRun <= scheduledTime).AsEnumerable();
+        var dueReminders = await db.Reminders.Include(x => x.ReminderType).Where(x =>
+            x.NextRun != null && x.NextRun <= scheduledTime).ToListAsync();
 
         foreach (var reminder in dueReminders)
         {
@@ -55,8 +55,8 @@ public class SendRemindersJob(
             }
         }
         
-        var dueOneTimeReminders = db.OneTimeReminders.Where(x =>
-            x.NextRun != null && x.NextRun <= scheduledTime).AsEnumerable();
+        var dueOneTimeReminders = await db.OneTimeReminders.Where(x =>
+            x.NextRun != null && x.NextRun <= scheduledTime).ToListAsync();
 
         foreach (var reminder in dueOneTimeReminders)
         {
