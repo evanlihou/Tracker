@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -10,25 +11,32 @@ using Tracker.Data;
 using Tracker.Models;
 using Tracker.Services;
 
+var startupWarnings = new List<string>();
+
 var builder = WebApplication.CreateBuilder(args);
 
+var startupOptions = builder.Configuration.Get<TrackerOptions>();
+if (startupOptions is null) throw new ApplicationException("Failed to bind configuration");
+builder.Services.AddOptions<TrackerOptions>().BindConfiguration("");
+
 // Add services to the container.
-var dbProvider = builder.Configuration["DbProvider"];
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (string.IsNullOrEmpty(dbProvider) || string.IsNullOrEmpty(connectionString))
+var dbProvider = startupOptions.DbProvider;
+var connectionString = startupOptions.ConnectionStrings[ConnectionStrings.DefaultConnection];
+
+if (string.IsNullOrEmpty(connectionString))
 {
-    throw new ArgumentNullException(nameof(connectionString), "DB connection info is required");
+    throw new ValidationException("DB connection info is required");
 }
 
 switch (dbProvider)
 {
-    case "MySQL":
+    case DbProvider.MySQL:
         builder.Services.AddDbContext<ApplicationDbContext, MysqlApplicationDbContext>(options =>
         {
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
         });
         break;
-    case "SQLite":
+    case DbProvider.SQLite:
         builder.Services.AddDbContext<ApplicationDbContext, SqliteApplicationDbContext>(options =>
             options.UseSqlite(connectionString));
         break;
@@ -58,7 +66,7 @@ builder.Services.Configure<PasswordlessLoginTokenProviderOptions>(opt => opt.Tok
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-if (!string.IsNullOrEmpty(builder.Configuration["Telegram:AccessToken"]))
+if (!string.IsNullOrEmpty(startupOptions.Telegram.AccessToken))
 {
     builder.Services.AddQuartzHostedService();
 
@@ -74,20 +82,24 @@ if (!string.IsNullOrEmpty(builder.Configuration["Telegram:AccessToken"]))
         );
     });
 
-    if (!string.IsNullOrEmpty(builder.Configuration["Telegram:AccessToken"]) &&
-        !string.IsNullOrEmpty(builder.Configuration["BaseUrl"]))
+    if (!string.IsNullOrEmpty(startupOptions.Telegram.AccessToken) &&
+        !string.IsNullOrEmpty(startupOptions.Telegram.BaseUrl))
     {
         builder.Services.AddSingleton(x => new TelegramSettings
         {
-            AccessToken = builder.Configuration["Telegram:AccessToken"]!,
-            BaseUrl = builder.Configuration["BaseUrl"]!
+            AccessToken = startupOptions.Telegram.AccessToken,
+            BaseUrl = startupOptions.Telegram.BaseUrl
         });
-        builder.Services.AddSingleton(x => new TelegramBotClient(builder.Configuration["Telegram:AccessToken"]!));
+        builder.Services.AddSingleton(_ => new TelegramBotClient(startupOptions.Telegram.AccessToken));
         builder.Services.AddScoped<TelegramBotService>();
         builder.Services.AddHostedService<TelegramPollingService>();
         builder.Services.AddScoped<IUpdateHandler, TelegramUpdateHandler>();
-
     }
+}
+else
+{
+    startupWarnings.Add(
+        "Running without Telegram credentials. Reminders job, bot, and logging in disabled. Things may act very weird");
 }
 
 builder.Services.AddScoped<ReminderService>();
@@ -122,5 +134,14 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
+
+if (startupWarnings.Count != 0)
+{
+    var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+    foreach (var warning in startupWarnings)
+    {
+        logger.LogWarning("Startup warning: {Warning}", warning);
+    }
+}
 
 app.Run();

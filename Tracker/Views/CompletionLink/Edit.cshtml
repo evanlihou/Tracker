@@ -1,10 +1,11 @@
+@using Microsoft.Extensions.Options
 @model Tracker.Models.CompletionLink
-@inject IConfiguration Configuration
+@inject IOptionsSnapshot<TrackerOptions> Configuration
 
 @{
   ViewBag.Title = $"Edit {Model?.Name ?? "Reminder Type"}";
   Layout = "_Layout";
-  var completionUri = new Uri(new Uri(Configuration["BaseUrl"] ?? ""), Url.Action("Complete", new { linkGuid = Model?.Guid }));
+  var completionUri = new Uri(new Uri(Configuration.Value.BaseUrl), Url.Action("Complete", new { linkGuid = Model?.Guid }));
 }
 
 <h2>@ViewBag.Title</h2>

@@ -20,7 +20,7 @@ public class Reminder : BaseReminder
     public bool IsActionable { get; set; } = true;
     public bool IsPendingCompletion { get; set; }
 
-    public List<CompletionLink> CompletionLinks { get; set; } = new List<CompletionLink>();
+    public virtual List<CompletionLink> CompletionLinks { get; set; } = [];
 
     public override string ToString()
     {
