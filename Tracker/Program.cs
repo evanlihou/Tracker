@@ -44,6 +44,8 @@ switch (dbProvider)
         throw new ApplicationException($"Unknown DB Provider {dbProvider}");
 }
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>();

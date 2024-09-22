@@ -1,14 +1,17 @@
 @using Microsoft.Extensions.Options
+@using Tracker.Services
 @inject IOptionsSnapshot<TrackerOptions> Configuration
+@inject TelegramBotService BotService
 
 @{
     var loginUri = new Uri(new Uri(Configuration.Value.BaseUrl), Url.Action("TelegramLogin", "User"));
+    var botUsername = (await BotService.GetBot()).Username;
 }
 
 <script
     async
     src="https://telegram.org/js/telegram-widget.js?22"
-    data-telegram-login="ELTrackTestBot"
+    data-telegram-login="@botUsername"
     data-size="large"
     data-auth-url="@loginUri"
     data-request-access="write"

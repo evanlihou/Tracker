@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -16,17 +17,26 @@ public class TelegramBotService
 {
     private readonly TelegramBotClient _botClient;
     private readonly ApplicationDbContext _db;
+    private readonly IMemoryCache _cache;
 
     public TelegramBotService(TelegramBotClient botClient, TelegramSettings telegramSettings,
-        ApplicationDbContext db)
+        ApplicationDbContext db, IMemoryCache cache)
     {
         _botClient = botClient;
         _db = db;
+        _cache = cache;
     }
 
     public async Task<User> GetBot()
     {
-        return await _botClient.GetMeAsync();
+        var user = await _cache.GetOrCreateAsync<User>("bot:getme", async entry =>
+        {
+            entry.SetAbsoluteExpiration(TimeSpan.FromHours(1));
+            return await _botClient.GetMeAsync();
+        });
+        if (user is null) throw new ApplicationException("Unable to get bot user!");
+        
+        return user;
     }
 
     public async Task<bool> SendMessageToUser(long? userId, string message, bool silent = false)
