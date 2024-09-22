@@ -1,0 +1,16 @@
+﻿@{
+  ViewData["Title"] = "Telegram Login";
+}
+
+<div class="text-center">
+  <h1 class="display-4">Telegram Login</h1>
+  
+  @if (ViewData["ErrorMessage"] is string && !string.IsNullOrWhiteSpace((string?)ViewData["ErrorMessage"]))
+  {
+    <div class="alert alert-danger">
+      @ViewData["ErrorMessage"]
+    </div>
+  }
+
+  <partial name="_TelegramLoginButtonPartial" />
+</div>

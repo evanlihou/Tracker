@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Telegram.Bot.Extensions.LoginWidget;
 using TimeZoneConverter;
 using Tracker.Models;
 using Tracker.Services;
@@ -10,15 +12,9 @@ namespace Tracker.Controllers;
 
 [Authorize]
 [Route("user")]
-public class UserController : BaseController
+public class UserController(SignInManager<ApplicationUser> signInManager, ILogger<UserController> logger)
+    : BaseController
 {
-    private readonly SignInManager<ApplicationUser> _signInManager;
-
-    public UserController(SignInManager<ApplicationUser> signInManager)
-    {
-        _signInManager = signInManager;
-    }
-
     [AllowAnonymous]
     [HttpGet("login")]
     public async Task<ActionResult> Login([FromQuery] string token, [FromQuery] string id)
@@ -32,9 +28,61 @@ public class UserController : BaseController
         if (!tokenValid) return BadRequest("Invalid login token");
         
         await UserManager.UpdateSecurityStampAsync(user);
-        await _signInManager.SignInAsync(user, false, "passwordless-token");
+        await signInManager.SignInAsync(user, false, "passwordless-token");
         
         return RedirectToAction("Index", "Home");
+    }
+    
+    [AllowAnonymous]
+    [HttpGet("/[action]")]
+    public async Task<ActionResult> TelegramLogin([FromQuery] TelegramLoginInfo loginInfo, [FromServices] IOptionsSnapshot<TrackerOptions> configuration)
+    {
+        if (string.IsNullOrEmpty(loginInfo.Hash))
+            return View();
+        
+        // Check the login info we've been passed
+        var query = HttpContext.Request.Query.Select(q =>
+            new KeyValuePair<string, string>(q.Key, q.Value.First() ?? throw new InvalidOperationException()));
+        var loginWidget = new LoginWidget(configuration.Value.Telegram.AccessToken);
+        
+        var loginResult = loginWidget.CheckAuthorization(query);
+        if (loginResult != Authorization.Valid)
+        {
+            logger.LogWarning("Failed to login: {FailureReason}", loginResult);
+            ViewData["ErrorMessage"] = $"An error occurred while logging in: {loginResult.ToString()}";
+            return View();
+        }
+        
+        var user = await UserManager.FindByNameAsync($"tg@{loginInfo.Id}");
+        if (user == null) return BadRequest("User not found");
+        await UserManager.UpdateSecurityStampAsync(user);
+        await signInManager.SignInAsync(user, false, "passwordless-token");
+        
+        return RedirectToAction("List", "Reminder");
+    }
+
+    public class TelegramLoginInfo
+    {
+        [BindProperty(Name = "id")]
+        public long? Id { get; set; }
+        
+        [BindProperty(Name = "first_name")]
+        public string? FirstName { get; set; }
+        
+        [BindProperty(Name = "last_name")]
+        public string? LastName { get; set; }
+        
+        [BindProperty(Name = "username")]
+        public string? Username { get; set; }
+        
+        [BindProperty(Name = "photo_url")]
+        public string? PhotoUrl { get; set; }
+        
+        [BindProperty(Name = "auth_date")]
+        public DateTime? AuthDate { get; set; }
+        
+        [BindProperty(Name = "hash")]
+        public string? Hash { get; set; }
     }
     
     [HttpPut]
