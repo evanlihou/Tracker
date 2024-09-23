@@ -6,9 +6,10 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 WORKDIR /src
-COPY ["Tracker.csproj", "Tracker/"]
-RUN dotnet restore "Tracker/Tracker.csproj"
-COPY . Tracker
+COPY ["Tracker/Tracker.csproj", "Tracker/"]
+COPY nuget.config .
+RUN dotnet restore --configfile nuget.config "Tracker/Tracker.csproj"
+COPY Tracker Tracker
 WORKDIR "/src/Tracker"
 RUN dotnet build "Tracker.csproj" -c Release -o /app/build
 

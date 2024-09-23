@@ -55,8 +55,8 @@ public partial class TelegramUpdateHandler(
         };
     }
 
-    public Task HandlePollingErrorAsync(ITelegramBotClient _, Exception exception,
-        CancellationToken cancellationToken)
+    public Task HandleErrorAsync(ITelegramBotClient _, Exception exception,
+        HandleErrorSource __, CancellationToken cancellationToken)
     {
         logger.LogError(exception, "Polling for updates failed");
         return Task.CompletedTask;
@@ -129,10 +129,10 @@ public partial class TelegramUpdateHandler(
             var url = _baseUrl + "user/login?token=" + Uri.EscapeDataString(token) + "&id=" + sendingUser.Id;
 
             if (environment.IsDevelopment()) logger.LogInformation("Login URL {Url}", url);
-
+            
             await botClient.SendTextMessageAsync(chatId,
                 "You can click the button below to log in to the website. The link will only be valid for 15 minutes.",
-                replyToMessageId: message.MessageId,
+                replyParameters: message.MessageId,
                 replyMarkup: new InlineKeyboardMarkup(
                     new[]
                     {
