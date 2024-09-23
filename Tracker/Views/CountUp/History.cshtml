@@ -1,4 +1,5 @@
 @using Humanizer
+@using Humanizer.Localisation
 @using Tracker.Services
 @model IEnumerable<CountUpHistory>
 @inject UserAccessor UserAccessor
@@ -26,6 +27,7 @@
       DateTime? endLocal = history.EndTimeUtc is not null
         ? TimeZoneInfo.ConvertTimeFromUtc(history.EndTimeUtc.Value, localTime)
         : null;
+      var difference = (history.EndTimeUtc ?? utcNow) - history.StartTimeUtc;
       <tr>
         <td>@startLocal</td>
         @if (endLocal is not null)
@@ -36,14 +38,10 @@
         {
           <td>(Still running)</td>
         }
-        @if (history.EndTimeUtc is not null)
-        {
-          <td>@((history.EndTimeUtc - history.StartTimeUtc).Value.Humanize())</td>
-        }
-        else
-        {
-          <td>@((utcNow - history.StartTimeUtc).Humanize())</td>
-        }
+        <td
+          title="@difference.Humanize(precision: 99, maxUnit: TimeUnit.Year, minUnit: TimeUnit.Second)">
+          @difference.Humanize(precision: 2, maxUnit: TimeUnit.Year)
+        </td>
       </tr>
     }
   </tbody>
