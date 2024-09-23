@@ -1,0 +1,50 @@
+@using Humanizer
+@using Tracker.Services
+@model IEnumerable<CountUpHistory>
+@inject UserAccessor UserAccessor
+
+@{
+  ViewBag.Title = "CountUp History";
+  Layout = "_Layout";
+  var localTime = await UserAccessor.GetUserTimeZone() ?? TimeZoneInfo.Utc;
+  var utcNow = DateTime.UtcNow;
+}
+
+<h2>CountUps</h2>
+<table class="table">
+  <thead>
+  <tr>
+    <th>Start</th>
+    <th>End</th>
+    <th>Duration</th>
+  </tr>
+  </thead>
+  <tbody>
+    @foreach (var history in Model)
+    {
+      var startLocal = TimeZoneInfo.ConvertTimeFromUtc(history.StartTimeUtc, localTime);
+      DateTime? endLocal = history.EndTimeUtc is not null
+        ? TimeZoneInfo.ConvertTimeFromUtc(history.EndTimeUtc.Value, localTime)
+        : null;
+      <tr>
+        <td>@startLocal</td>
+        @if (endLocal is not null)
+        {
+          <td>@endLocal</td>
+        }
+        else
+        {
+          <td>(Still running)</td>
+        }
+        @if (history.EndTimeUtc is not null)
+        {
+          <td>@((history.EndTimeUtc - history.StartTimeUtc).Value.Humanize())</td>
+        }
+        else
+        {
+          <td>@((utcNow - history.StartTimeUtc).Humanize())</td>
+        }
+      </tr>
+    }
+  </tbody>
+</table>

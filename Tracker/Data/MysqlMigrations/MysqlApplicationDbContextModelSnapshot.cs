@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tracker.Data;
 
@@ -16,8 +17,10 @@ namespace Tracker.Data.MysqlMigrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0-rc.1.23419.6")
+                .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("CompletionLinkReminder", b =>
                 {
@@ -39,6 +42,8 @@ namespace Tracker.Data.MysqlMigrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("FriendlyName")
                         .HasColumnType("longtext");
@@ -83,6 +88,8 @@ namespace Tracker.Data.MysqlMigrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<string>("ClaimType")
                         .HasColumnType("longtext");
 
@@ -106,6 +113,8 @@ namespace Tracker.Data.MysqlMigrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<string>("ClaimType")
                         .HasColumnType("longtext");
 
@@ -126,10 +135,12 @@ namespace Tracker.Data.MysqlMigrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
                     b.Property<string>("LoginProvider")
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
 
                     b.Property<string>("ProviderKey")
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
 
                     b.Property<string>("ProviderDisplayName")
                         .HasColumnType("longtext");
@@ -166,10 +177,12 @@ namespace Tracker.Data.MysqlMigrations
                         .HasColumnType("varchar(255)");
 
                     b.Property<string>("LoginProvider")
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
 
                     b.Property<string>("Name")
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
 
                     b.Property<string>("Value")
                         .HasColumnType("longtext");
@@ -257,6 +270,8 @@ namespace Tracker.Data.MysqlMigrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<Guid>("Guid")
                         .HasColumnType("char(36)");
 
@@ -274,11 +289,62 @@ namespace Tracker.Data.MysqlMigrations
                     b.ToTable("CompletionLinks");
                 });
 
+            modelBuilder.Entity("Tracker.Models.CountUp", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CountingFromUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CountUps");
+                });
+
+            modelBuilder.Entity("Tracker.Models.CountUpHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CountUpId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EndTimeUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("StartTimeUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountUpId");
+
+                    b.ToTable("CountUpHistories");
+                });
+
             modelBuilder.Entity("Tracker.Models.OneTimeReminder", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("LastRun")
                         .HasColumnType("datetime(6)");
@@ -312,6 +378,8 @@ namespace Tracker.Data.MysqlMigrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<string>("ConfigCode")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -330,6 +398,8 @@ namespace Tracker.Data.MysqlMigrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CronLocal")
                         .HasMaxLength(100)
@@ -387,6 +457,8 @@ namespace Tracker.Data.MysqlMigrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CompletionTime")
                         .HasColumnType("datetime(6)");
 
@@ -406,6 +478,8 @@ namespace Tracker.Data.MysqlMigrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<int>("MessageId")
                         .HasColumnType("int");
 
@@ -424,6 +498,8 @@ namespace Tracker.Data.MysqlMigrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -505,6 +581,17 @@ namespace Tracker.Data.MysqlMigrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Tracker.Models.CountUpHistory", b =>
+                {
+                    b.HasOne("Tracker.Models.CountUp", "CountUp")
+                        .WithMany("Histories")
+                        .HasForeignKey("CountUpId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CountUp");
+                });
+
             modelBuilder.Entity("Tracker.Models.Reminder", b =>
                 {
                     b.HasOne("Tracker.Models.ReminderType", "ReminderType")
@@ -536,6 +623,11 @@ namespace Tracker.Data.MysqlMigrations
                         .IsRequired();
 
                     b.Navigation("Reminder");
+                });
+
+            modelBuilder.Entity("Tracker.Models.CountUp", b =>
+                {
+                    b.Navigation("Histories");
                 });
 #pragma warning restore 612, 618
         }

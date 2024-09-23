@@ -1,0 +1,26 @@
+@using Tracker.Controllers
+@model Tracker.Controllers.CountUpController.StartStopViewModel
+
+@{
+  ViewBag.Title = Model.Action switch
+  {
+    CountUpController.StartStopAction.Start => "Start CountUp",
+    CountUpController.StartStopAction.Stop => "Stop CountUp",
+    _ => throw new ArgumentOutOfRangeException()
+  };
+  Layout = "_Layout";
+}
+
+<h2>@ViewBag.Title</h2>
+
+<form asp-action="StartStopPost" method="post" asp-route-countUpId="@Model.CountUpId">
+  <input asp-for="Action" value="@Model.Action" hidden="hidden"/>
+  <div class="mb-3">
+    <label asp-for="LocalTime" class="form-label">Start Date</label>
+    <input type="datetime-local" class="form-control" asp-for="LocalTime">
+    <span asp-validation-for="LocalTime" class="text-danger"></span>
+    <button type="button" class="btn btn-link" onclick="document.getElementById('@Html.IdFor(x => x.LocalTime)').value = null;">Clear</button>
+  </div>
+
+  <button type="submit" class="btn btn-primary">@Model.Action</button>
+</form>

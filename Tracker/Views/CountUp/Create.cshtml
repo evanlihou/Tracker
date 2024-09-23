@@ -1,0 +1,12 @@
+@model Tracker.Models.CountUp
+
+@{
+  ViewBag.Title = $"Create CountUp";
+  Layout = "_Layout";
+}
+
+<h2>Create CountUp</h2>
+
+<form asp-action="Create" method="post">
+  <partial name="_CreateOrEditForm" model="Model" />
+</form>

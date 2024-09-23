@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -52,9 +53,26 @@ public class UserController(SignInManager<ApplicationUser> signInManager, ILogge
             ViewData["ErrorMessage"] = $"An error occurred while logging in: {loginResult.ToString()}";
             return View();
         }
+
+        var username = $"tg@{loginInfo.Id}";
+        var user = await UserManager.FindByNameAsync(username);
+        if (user == null)
+        {
+            var newUser = await UserManager.CreateAsync(new ApplicationUser
+            {
+                UserName = username,
+                TelegramUserId = loginInfo.Id
+            });
+
+            if (!newUser.Succeeded)
+            {
+                throw new ApplicationException("Failed to create new user");
+            }
+
+            user = await UserManager.FindByNameAsync(username);
+            Debug.Assert(user != null);
+        }
         
-        var user = await UserManager.FindByNameAsync($"tg@{loginInfo.Id}");
-        if (user == null) return BadRequest("User not found");
         await UserManager.UpdateSecurityStampAsync(user);
         await signInManager.SignInAsync(user, false, "passwordless-token");
         

@@ -104,7 +104,10 @@ else
         "Running without Telegram credentials. Reminders job, bot, and logging in disabled. Things may act very weird");
 }
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ReminderService>();
+builder.Services.AddScoped<CountUpService>();
+builder.Services.AddScoped<UserAccessor>();
 builder.Services.AddScoped<PersistentConfigRepository>();
 
 var app = builder.Build();

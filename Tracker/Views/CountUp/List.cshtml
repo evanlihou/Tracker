@@ -1,0 +1,43 @@
+@using Humanizer
+@model IEnumerable<CountUp>
+
+@{
+  ViewBag.Title = "CountUps";
+  Layout = "_Layout";
+
+  var now = DateTime.UtcNow;
+}
+
+<h2>CountUps</h2>
+<p>
+  <a asp-action="Create">Create</a>
+</p>
+<table class="table">
+  <thead>
+  <tr>
+    <th>Name</th>
+    <th>Time Elapsed</th>
+    <th>Actions</th>
+  </tr>
+  </thead>
+  <tbody>
+    @foreach (var countUp in Model)
+    {
+      <tr>
+        <td>@countUp.Name</td>
+        @if (countUp.CountingFromUtc is not null)
+        {
+          <td>@((now - countUp.CountingFromUtc)!.Value.Humanize())</td>
+        }
+        else
+        {
+          <td>(Not running)</td>
+        }
+        <td>
+          <a asp-action="Edit" asp-route-countUpId="@countUp.Id">Edit</a>
+          <a asp-action="History" asp-route-countUpId="@countUp.Id">History</a>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

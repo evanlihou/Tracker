@@ -19,8 +19,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     public DbSet<PersistentConfig> PersistentConfigs => Set<PersistentConfig>();
     public DbSet<ReminderCompletion> ReminderCompletions => Set<ReminderCompletion>();
     public DbSet<ReminderMessage> ReminderMessages => Set<ReminderMessage>();
-
     public DbSet<CompletionLink> CompletionLinks => Set<CompletionLink>();
+    public DbSet<CountUp> CountUps => Set<CountUp>();
+    public DbSet<CountUpHistory> CountUpHistories => Set<CountUpHistory>();
     
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
