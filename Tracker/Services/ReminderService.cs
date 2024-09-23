@@ -59,16 +59,18 @@ public class ReminderService(
         
         try
         {
-            var reminderMessages = db.ReminderMessages.Where(x => x.ReminderId == reminder.Id);
-
-            List<Task> deletedMessageTasks = new();
-            foreach (var message in reminderMessages)
-                deletedMessageTasks.Add(botClient.DeleteMessageAsync(user!.TelegramUserId!, message.MessageId,
-                    cancellationToken));
-
-            if (deletedMessageTasks.Any()) await Task.WhenAll(deletedMessageTasks);
-
-            db.ReminderMessages.RemoveRange(reminderMessages);
+            // Telegram can only handle deleting 100 messages at a time, so paginate the data
+            var lastIdDeleted = 0;
+            do
+            {
+                var messagesPage = db.ReminderMessages
+                    .Where(x => x.ReminderId == reminder.Id && x.Id > lastIdDeleted).Take(100).OrderBy(x => x.Id);
+                if (!messagesPage.Any()) break;
+                await botClient.DeleteMessagesAsync(user!.TelegramUserId!, messagesPage.Select(m => m.MessageId),
+                    cancellationToken: cancellationToken);
+                lastIdDeleted = messagesPage.Last().Id;
+                db.ReminderMessages.RemoveRange(messagesPage);
+            } while (true);
         }
         catch (Exception ex)
         {

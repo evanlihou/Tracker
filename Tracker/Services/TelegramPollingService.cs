@@ -1,6 +1,5 @@
 using Telegram.Bot;
 using Telegram.Bot.Polling;
-using Telegram.Bot.Types.Enums;
 using Tracker.Data;
 
 namespace Tracker.Services;
@@ -41,7 +40,7 @@ public class TelegramPollingService(
                 var receiverOptions = new ReceiverOptions()
                 {
                     AllowedUpdates = [],
-                    ThrowPendingUpdates = lastProcessedId is null,
+                    DropPendingUpdates = lastProcessedId is null,
                     Offset = lastProcessedId + 1
                 };
                 var me = await botClient.GetMeAsync(stoppingToken);
